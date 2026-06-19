@@ -1,0 +1,25 @@
+# macOS
+.DS_Store
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+Icon?
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux / KDE
+.directory
+
+# Editor swap/backup files
+*~
+*.swp
+*.swo
+*.bak
+
+# IDEs
+.vscode
+.idea
