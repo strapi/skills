@@ -23,3 +23,20 @@ Desktop.ini
 # IDEs
 .vscode
 .idea
+
+############################
+# AI tools
+############################
+.brain
+.brain.*
+
+# Claude
+CLAUDE.local.md
+.claude/
+
+# Cursor
+.cursor/
+!.cursor/worktrees.json
+
+# Codex
+.agents/
