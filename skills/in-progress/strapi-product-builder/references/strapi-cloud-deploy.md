@@ -53,4 +53,4 @@ This is the default deployment target for any project produced by this skill. Us
 
 ## When NOT to use Strapi Cloud
 
-If the user opted out in stage 4 (data-residency, on-prem requirement, cost ceiling), use the `dockerize-strapi` skill instead and pick a host (Render, Railway, Fly.io, AWS ECS, plain VPS). Update the stage-6 Deployment section accordingly and remove Strapi Cloud-specific env-var notes.
+If the user opted out in stage 4 (data-residency, on-prem requirement, cost ceiling), spec a Dockerfile + `docker-compose` (Postgres) instead (see the Strapi Docker guide on https://docs.strapi.io) and pick a host (Render, Railway, Fly.io, AWS ECS, plain VPS). Update the stage-6 Deployment section accordingly and remove Strapi Cloud-specific env-var notes.

@@ -6,11 +6,11 @@ Strapi is a headless backend, so the frontend is the user's choice. **Ask in sta
 
 ## The four first-class options
 
-| Framework | Best for | Scaffold | Routes live in | Public env prefix | Companion skill |
+| Framework | Best for | Scaffold | Routes live in | Public env prefix | Official starter / ref |
 |---|---|---|---|---|---|
-| **Next.js** (App Router) | The default for most app-style products; biggest ecosystem, React Server Components | `npx create-next-app@latest` | `app/` (file-based) | `NEXT_PUBLIC_` | — (the `better-auth-setup` skill wires Next.js directly) |
+| **Next.js** (App Router) | The default for most app-style products; biggest ecosystem, React Server Components | `npx create-next-app@latest` | `app/` (file-based) | `NEXT_PUBLIC_` | [strapi/LaunchPad](https://github.com/strapi/LaunchPad) — official Next.js + Strapi demo |
 | **TanStack Start** | Type-safe full-stack React on Vite, file-based routes + loaders | `npx create-start-app@latest` (verify; TanStack CLI is moving) | `src/routes/` | `VITE_` | — |
-| **Astro** | Content-heavy / mostly-static **public** sites (marketing, blogs, docs). For authenticated or interactive content *apps*, prefer Next.js | `npm create astro@latest` | `src/pages/` (file-based) | `PUBLIC_` | **`add-page`** (Astro-only — only recommend it on this path) |
+| **Astro** | Content-heavy / mostly-static **public** sites (marketing, blogs, docs). For authenticated or interactive content *apps*, prefer Next.js | `npm create astro@latest` | `src/pages/` (file-based) | `PUBLIC_` | — |
 | **Vue / Nuxt** | Vue teams; Nuxt gives SSR + file-based routing | `npx nuxi@latest init` (Nuxt) | `pages/` (Nuxt) | `NUXT_PUBLIC_` (Nuxt) / `VITE_` (plain Vue) | — |
 
 If the user wants something else (SvelteKit, SolidStart, Remix, plain React SPA, mobile/Expo), support it — just look up that framework's scaffold + routing + env conventions and parameterize the same four things below.

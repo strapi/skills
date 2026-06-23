@@ -6,19 +6,17 @@ Default auth approach for any project this skill produces. Reference when fillin
 - Plugin docs: https://strapi-community.github.io/plugin-better-auth/
 - Better Auth docs: https://better-auth.com
 - Strapi Users & Permissions docs (for the underlying role model): https://docs.strapi.io/cms/features/users-permissions
-- Worked LaunchPad reference (Strapi v5 + Next.js): https://github.com/PaulBratslavsky/launchpad-better-auth-example
-- Blog walkthrough: https://github.com/PaulBratslavsky/launchpad-better-auth-example/blob/main/BETTER-AUTH-BLOG-POST.md
-- Concise setup guide: https://github.com/PaulBratslavsky/launchpad-better-auth-example/blob/main/BETTER-AUTH-SETUP.md
+- Official Strapi Better Auth tutorial: https://strapi.io/blog/strapi-better-auth-tutorial-setup-guide-for-strapi-v5-and-next-js-16
 
 > ⚠️ **BETA — confirm with the user before defaulting to this.** The maintainers state the plugin is in **beta** and **"should not be used in production"**, with Strapi v5 support marked *experimental*. It's an excellent choice for prototypes/POCs and when you want social login, 2FA, magic links, or passkeys without hand-rolling them. For a production launch on a tight timeline, stock **Users & Permissions** (below) is the conservative fallback. Always state the beta status in stage 4 and get an explicit yes before writing it into the spec.
 
 > Plugin APIs and config keys evolve. Always check the plugin docs/README before pasting install commands or config snippets into a build spec.
 
-## Requirements & companion skill
+## Requirements
 
 - **Strapi ≥ 5.45.0** and **Node ≥ 20**. If the project pins an older Strapi, this plugin won't work — fall back to Users & Permissions.
-- **It requires removing Users & Permissions — this is a hard boot requirement, not a suggestion.** Verified empirically: with `@strapi/plugin-users-permissions` still installed, Strapi **refuses to boot** — *"The 'users-permissions' plugin is installed. Better Auth and users-permissions cannot be used together."* So you must `npm uninstall @strapi/plugin-users-permissions` (the `better-auth-setup` skill does this). Consequently the "Public / Authenticated U&P role" model in `content-modeling.md` and the stage-5 permissions template **does not apply on this path** — content-API permissions are governed by the companion **`@strapi-community/plugin-api-permissions`** plugin instead (which needs the generated `user` content type to exist). Capture permissions in those terms when Better Auth is chosen.
-- **In Claude Code, prefer the `better-auth-setup` companion skill.** It installs all three plugins (`plugin-better-auth`, `plugin-api-permissions`, `plugin-better-auth-dashboard`), removes users-permissions, pins zod 4 (peer-dep fix), seeds Public-role permissions, and scaffolds the Next.js client + forms. Reference it in stage 6 instead of hand-rolling the install.
+- **It requires removing Users & Permissions — this is a hard boot requirement, not a suggestion.** Verified empirically: with `@strapi/plugin-users-permissions` still installed, Strapi **refuses to boot** — *"The 'users-permissions' plugin is installed. Better Auth and users-permissions cannot be used together."* So you must `npm uninstall @strapi/plugin-users-permissions`. Consequently the "Public / Authenticated U&P role" model in `content-modeling.md` and the stage-5 permissions template **does not apply on this path** — content-API permissions are governed by the companion **`@strapi-community/plugin-api-permissions`** plugin instead (which needs the generated `user` content type to exist). Capture permissions in those terms when Better Auth is chosen.
+- **Follow the official Strapi Better Auth tutorial** (linked above) for the full install/config: it covers all three plugins (`plugin-better-auth`, `plugin-api-permissions`, `plugin-better-auth-dashboard`), removing users-permissions, the zod-4 peer-dep pin, seeding Public-role permissions, and wiring the Next.js client + forms. The concrete steps are inline below.
 
 ## What's in the stack
 
@@ -40,7 +38,7 @@ Stock Users & Permissions is still fine for: simple email/password with no socia
 
 ## Install (steps verified against the official Strapi tutorial)
 
-> Authoritative source: **Strapi's own tutorial** — https://strapi.io/blog/strapi-better-auth-tutorial-setup-guide-for-strapi-v5-and-next-js-16. The steps below follow it. In Claude Code, prefer running the **`better-auth-setup`** skill, which automates all of this.
+> Authoritative source: **Strapi's own tutorial** — https://strapi.io/blog/strapi-better-auth-tutorial-setup-guide-for-strapi-v5-and-next-js-16. The steps below follow it.
 
 **1. Install** (in the Strapi project — `apps/cms` or wherever Strapi lives). Note the extra packages and the **zod 4 pin** (the dashboard needs zod 4; Strapi pulls zod 3 transitively):
 
@@ -108,7 +106,7 @@ npx @better-auth/cli generate --config src/lib/auth.ts --yes
 > - The README says config goes in `config/better-auth.ts` — that path is **only** the `--config` arg for the generate CLI. The **runtime** loads from `src/lib/auth.ts` (or `./auth.ts` / `./lib/auth.ts`). Wrong location → boot error *"No Better Auth configuration was found."*
 > - The README shows a **factory** (`const auth = () => betterAuth(...)`). The runtime rejected that with `TypeError: Cannot use 'in' operator to search for 'basePath' in undefined`. Exporting the **instance** (`export const auth = betterAuth(...)`) got past it.
 > - `plugin-api-permissions` is **alpha** (less mature than the beta auth plugin).
-> - Even following the docs, this beta stack is fiddly to boot (export-shape sensitivity; an early-DB-open `SqliteError` on the instance export). Budget real debugging time, prefer Postgres over SQLite, and treat the `better-auth-setup` skill as the path of least resistance. **This is exactly why it's not for production.**
+> - Even following the docs, this beta stack is fiddly to boot (export-shape sensitivity; an early-DB-open `SqliteError` on the instance export). Budget real debugging time, prefer Postgres over SQLite, and follow the official Strapi tutorial closely. **This is exactly why it's not for production.**
 > - **The official Strapi tutorial corroborates the key points** (https://strapi.io/blog/strapi-better-auth-tutorial-setup-guide-for-strapi-v5-and-next-js-16): remove U&P from `package.json` (disabling isn't enough), instance export at `src/lib/auth.ts`, `generateId: 'serial'` required, enable the three plugins in `config/plugins.ts`, and pin `zod@^4.1.12`.
 > - The exact surface keeps moving — re-check the Strapi tutorial and https://strapi-community.github.io/plugin-better-auth/. The non-negotiables: Strapi ≥ 5.45, `generateId: 'serial'`, U&P removed (below), and the generate step.
 
@@ -148,7 +146,7 @@ Better Auth manages its own `user` and `session` tables. To attach Strapi-side d
 
 Because the Better Auth path **removes Users & Permissions**, the usual "Public / Authenticated role per content type" model does not apply here. Instead:
 
-- **Content-API permissions are governed by `@strapi-community/plugin-api-permissions`.** Configure which roles can read/write each content type there. (The `better-auth-setup` skill seeds Public-role read permissions for you.)
+- **Content-API permissions are governed by `@strapi-community/plugin-api-permissions`.** Configure which roles can read/write each content type there. (Seed Public-role read permissions on bootstrap — the tutorial shows the snippet.)
 - A request is "authenticated" when it carries a valid Better Auth session cookie. Gate `create`/`update`/`delete` of user-owned content on an authenticated session.
 - For per-record ownership ("only the author can edit their article"), use the plugin's owner middleware, or write a Strapi **policy** (`src/policies/is-owner.ts`) and attach it to the route.
 - The Strapi **admin** panel login is separate from end-user auth — Better Auth doesn't touch it.

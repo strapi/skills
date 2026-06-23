@@ -2,7 +2,7 @@
 
 > **Build target**: Strapi v5 (deployed to Strapi Cloud) + [chosen frontend] frontend.
 > **Docs lookup**: query the `strapi-docs` MCP first; otherwise WebFetch https://docs.strapi.io.
-> **Companion skills**: `strapi-configuration` for scaffolding; `better-auth-setup` for the Better Auth path; `add-page` **only on Astro**; `dockerize-strapi` only if not deploying to Strapi Cloud.
+> **Self-contained**: build straight from this spec + the official Strapi docs. For the non-obvious v5 controller/ownership/seeding patterns, see the Document Service (https://docs.strapi.io/cms/api/document-service), controllers (https://docs.strapi.io/cms/backend-customization/controllers), and policies (https://docs.strapi.io/cms/backend-customization/policies) docs.
 
 ## Project overview
 [2-3 sentences from stage 1, plus the one-liner]
@@ -51,7 +51,7 @@ cd apps/web && npm install @tanstack/react-query   # + better-auth if using Bett
 ### M1 — Strapi scaffold + Strapi Cloud project linked
 **Goal**: Strapi runs locally on Postgres and deploys to Strapi Cloud on push.
 **Tasks**:
-- [ ] Invoke `strapi-configuration` skill with the schemas below
+- [ ] Create the content types from the schemas below (Strapi v5 `schema.json`, per the Content-Type Builder docs)
 - [ ] Create Strapi Cloud project at https://cloud.strapi.io, link the repo
 - [ ] Set env vars in Strapi Cloud
 **Done when**: `npm run develop` boots locally and `git push` triggers a successful Strapi Cloud deploy.
@@ -62,7 +62,7 @@ cd apps/web && npm install @tanstack/react-query   # + better-auth if using Bett
 
 ### M3 — Auth
 **Better Auth path (beta — confirmed in stage 4; follows the official Strapi tutorial: https://strapi.io/blog/strapi-better-auth-tutorial-setup-guide-for-strapi-v5-and-next-js-16):**
-- [ ] Prefer the `better-auth-setup` skill (does all of the below). Manual equivalent:
+- [ ] Install + configure Better Auth (steps below follow the official tutorial linked above):
 - [ ] `npm install better-auth @strapi-community/plugin-better-auth @strapi-community/plugin-api-permissions @strapi-community/plugin-better-auth-dashboard @better-auth/infra zod@^4.1.12` (zod 4 pin is required)
 - [ ] **`npm uninstall @strapi/plugin-users-permissions`** — mandatory; remove it from `package.json` (disabling isn't enough — the plugin throws at boot if the package is present)
 - [ ] Enable in `config/plugins.ts`: `'better-auth'`, `'better-auth-dashboard'`, `'api-permissions'` all `{ enabled: true }`
@@ -75,7 +75,7 @@ cd apps/web && npm install @tanstack/react-query   # + better-auth if using Bett
 **Done when**: A user can sign up + sign in + sign out via the frontend.
 
 ### M4 — Custom controllers / lifecycles / middlewares
-[from stage 5]
+[from stage 5] — for server-set fields (e.g. `owner`) and owner-scoped reads, use the **Document Service** (`strapi.documents()`) inside the controller, not body/`ctx.query` mutation (which 400s in v5); apply an `is-owner` policy on `update`/`delete`. Docs: https://docs.strapi.io/cms/api/document-service · https://docs.strapi.io/cms/backend-customization/policies
 
 ### M5 — Frontend routes + data fetching
 [from stage 5 route tree, in the chosen framework's convention]
@@ -84,7 +84,7 @@ cd apps/web && npm install @tanstack/react-query   # + better-auth if using Bett
 [auth client (`better-auth/react` or `better-auth/vue`, or U&P) + protected routes]
 
 ### M7 — Seed data + media
-[use `strapi-configuration` seed flow]
+[write a seed script: create content via the **Document Service**; create end-users via the **U&P user service** so passwords hash; seed **both** Public and Authenticated permissions]
 
 ### M8 — Deploy
 **Tasks**:

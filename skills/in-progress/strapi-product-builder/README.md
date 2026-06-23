@@ -16,7 +16,7 @@ The output is six markdown files (`01-product.md` through `06-claude-code-spec.m
   - Frontend: **your choice** — first-class support for **Next.js, TanStack Start, Astro, Vue/Nuxt** (asked every time, no silent default)
   - Auth: **`@strapi-community/plugin-better-auth`** ⚠️ *(currently beta — maintainers say not for production; needs Strapi ≥ 5.45 and removes Users & Permissions)*, or stock **Users & Permissions** for production/conservative builds
   - Styling: Tailwind
-- *Optionally* accelerates the build with companion Claude Code skills **when they're installed** (`strapi-configuration`, `better-auth-setup`, `add-page` [Astro only], `dockerize-strapi`, `strapi-custom-field`) — these are experimental/optional and most users won't have them, so the generated spec always works without them. See the registry in `references/companions.md`.
+- **Self-contained** — the generated spec builds with no other skills installed; it references only official Strapi sources (docs, official blog posts, the official `strapi/LaunchPad` starter).
 - **Optional Strapi MCP server** — if the product needs AI agents to read/write its content, stage 4 can enable Strapi's built-in MCP server (v5.47+, beta). Off by default. See `references/strapi-mcp-server.md`.
 - Uses the `strapi-docs` MCP for fact-checking when installed; falls back to https://docs.strapi.io
 
@@ -58,7 +58,7 @@ cp -R skills/skills/in-progress/strapi-product-builder /path/to/your/project/.ag
 
 Then start a new Claude Code session — the skill will be auto-discovered. Verify with `/help` (it should appear in the available skills list).
 
-> Why Claude Code is best: filesystem writes, MCP support, and you can chain into companion skills (`strapi-configuration`, `add-page`, etc.) directly after stage 6 — *when those skills are installed* (they're optional; the spec works without them).
+> Why Claude Code is best: filesystem writes, MCP support, and you can build straight from the stage-6 spec in the same session.
 
 ### Claude Desktop
 
@@ -89,7 +89,7 @@ For docs lookup, also install a Strapi docs MCP server if you have one — Setti
 
 The skill renders each stage's output as an **artifact** you can copy or download. The final stage-6 spec is what you'll paste into a future Claude Code session to actually build.
 
-> Note: claude.ai web can't write files to your machine and can't invoke companion skills directly. It produces the spec; you run the build elsewhere.
+> Note: claude.ai web can't write files to your machine or run a build. It produces the spec; you run the build in Claude Code.
 
 ### Verifying the install (any surface)
 
@@ -142,18 +142,15 @@ You can jump back and revise any earlier stage at any time — the skill will as
 
 ### After the spec is done
 
-The stage-6 spec is **self-contained** — you can build straight from it with no other skills installed. The companion skills below are *optional accelerators* (experimental — see `references/companions.md`); if you happen to have them, they speed up the matching step, otherwise the spec already contains the manual steps.
+The stage-6 spec is **self-contained** — build straight from it with nothing else installed. It carries the actual commands, schemas, and config; for the non-obvious Strapi v5 steps it points at the official docs.
 
 In **Claude Code**:
 
 ```
 > build from @06-claude-code-spec.md
-# If these optional companion skills are installed, use them for the matching step:
-#   strapi-configuration  → scaffold the backend + content types
-#   better-auth-setup     → wire Better Auth (only if you chose that path)
-#   add-page              → add a content-backed page later (Astro frontends only)
-#   dockerize-strapi      → only if you opted out of Strapi Cloud
 ```
+
+Claude works through the milestones (M1–M8), consulting the official Strapi docs (or the `strapi-docs` MCP) as it goes.
 
 In **Desktop** or **web**: copy `06-claude-code-spec.md` and paste it as the first message in a Claude Code session.
 
@@ -171,7 +168,7 @@ In **Desktop** or **web**: copy `06-claude-code-spec.md` and paste it as the fir
 The skill is just files in a folder. To update opinions or add references:
 
 - Add a new opinion → drop it in `references/` and link it from `SKILL.md`.
-- Add a companion skill or external doc/blog → register it in `references/companions.md` or `references/resources.md` (one row each) rather than hardcoding it in the stages.
+- Add an official doc / blog / starter reference → add a row in `references/resources.md` (official Strapi sources only).
 - Tweak a stage's output → edit the matching file in `templates/`.
 - Add a worked example → make a folder under `examples/` with the six output files.
 - Add a helper → drop it in `scripts/` and document it in `scripts/README.md`.

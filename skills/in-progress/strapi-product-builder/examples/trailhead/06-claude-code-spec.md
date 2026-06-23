@@ -2,7 +2,7 @@
 
 > **Build target**: Strapi v5 (deployed to Strapi Cloud) + Next.js (App Router) frontend.
 > **Docs lookup**: query the `strapi-docs` MCP first; otherwise WebFetch https://docs.strapi.io.
-> **Companion skills**: `strapi-configuration` for scaffolding; `better-auth-setup` for auth (Better Auth path chosen); `dockerize-strapi` not needed (deploying to Strapi Cloud). `add-page` is Astro-only — not used here.
+> **Self-contained**: build straight from this spec + the official Strapi docs (https://docs.strapi.io or the `strapi-docs` MCP). Better Auth follows the official tutorial: https://strapi.io/blog/strapi-better-auth-tutorial-setup-guide-for-strapi-v5-and-next-js-16
 
 ## Project overview
 Trailhead is a community app where local hikers post and read up-to-the-day trail condition reports, so nobody drives an hour to a washed-out trail. Public reads, authenticated posting, and a moderator-curated trail list. One-liner: *day-fresh trail conditions, by the people who were just there.*
@@ -45,7 +45,7 @@ cd apps/web && npm install better-auth @tanstack/react-query
 
 ### M1 — Strapi scaffold + Strapi Cloud project linked
 **Tasks**:
-- [ ] Invoke `strapi-configuration` with the schemas below
+- [ ] Create the content types from the schemas below
 - [ ] Create Strapi Cloud project, link repo (root `apps/cms`), set env vars
 **Done when**: `npm run develop` boots locally on Postgres and `git push` deploys to Strapi Cloud.
 
@@ -55,7 +55,7 @@ cd apps/web && npm install better-auth @tanstack/react-query
 
 ### M3 — Auth (Better Auth path — beta, confirmed)
 **Tasks**:
-- [ ] Run `better-auth-setup` (does all of the below) — or the manual steps:
+- [ ] Install + configure Better Auth (steps below follow the official tutorial):
 - [ ] `npm install better-auth @strapi-community/plugin-better-auth @strapi-community/plugin-api-permissions @strapi-community/plugin-better-auth-dashboard @better-auth/infra zod@^4.1.12`
 - [ ] `npm uninstall @strapi/plugin-users-permissions` (mandatory — remove from package.json; Strapi won't boot with both)
 - [ ] Enable `better-auth`, `better-auth-dashboard`, `api-permissions` in `config/plugins.ts`
@@ -79,7 +79,7 @@ cd apps/web && npm install better-auth @tanstack/react-query
 - [ ] `better-auth/react` client; auth-gated PostReportButton; protected `/my-reports`
 
 ### M7 — Seed data + media
-- [ ] Seed ~3 regions, ~12 trails (with hero images), a handful of reports (via `strapi-configuration` seed flow)
+- [ ] Seed ~3 regions, ~12 trails (with hero images), a handful of reports (seed script via the Document Service)
 
 ### M8 — Deploy
 - [ ] Backend → Strapi Cloud (push); Frontend → Vercel (set env vars)

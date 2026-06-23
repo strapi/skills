@@ -25,7 +25,7 @@ Before recommending Strapi APIs, plugin patterns, content-type configuration, or
 
 1. **Strapi Docs MCP** — if an MCP server named `strapi-docs` (or similar, e.g. `mcp__strapi-docs__*`) is connected, prefer it for any factual lookup. Use it whenever the user asks "how do I do X in Strapi" or you're about to write code that touches Strapi internals (lifecycles, controllers, services, policies, middlewares, plugin SDK, content-type schemas, the Document Service API, etc.).
 2. **Official documentation** — fall back to https://docs.strapi.io (v5 is the current major version). Use `WebFetch` to pull the specific page when an MCP isn't available.
-3. **Companion skills** — for common Strapi build tasks, prefer an existing companion skill over reinventing — **but companions are optional accelerators, never requirements.** The current set (capability, status, surface constraints, and a per-capability fallback for when the skill is absent) is the **`references/companions.md`** registry — the single source of truth. Two rules govern their use: reason **capability-first** (not by skill name), and **discover before invoking** (only call a companion actually present this session; otherwise emit its fallback into the spec). Any companion names mentioned in stages 4–6 below are **illustrative** — the registry + the availability check are what govern. Most users have none of these installed, so the stage-6 spec must always stand on its own.
+3. **This skill's own `references/`** — for build-sensitive specifics consult `references/strapi-build-cookbook.md` (the non-obvious Strapi v5 traps) and the other reference files, then fall back to the official docs. This skill is **self-contained**: it references only official Strapi sources (docs, official blog posts, official starters such as `strapi/LaunchPad`) and never depends on any other skill being installed. The stage-6 spec must always stand on its own — buildable from it + the official docs.
 
 **When to cite the docs in the output files**: whenever stage 5 or 6 references a non-obvious Strapi feature (lifecycles, components vs. dynamic zones, draft & publish, i18n, RBAC, custom fields, document service queries), include a link to the relevant docs page so the future Claude Code build session can verify the API surface before generating code. Curated, capability-tagged sources (official docs, Strapi blog tutorials, reference repos) live in **`references/resources.md`** — cite the matching entry, and re-verify any blog tutorial's exact commands/versions against current docs first (tutorials drift).
 
@@ -45,7 +45,7 @@ strapi-product-builder/
 │   ├── frontend-frameworks.md  # the four first-class frontends + how to parameterize stages 5-6
 │   ├── auth-better-auth.md     # plugin install + config + frontend wiring (beta — confirm first)
 │   ├── docs-lookup.md          # how to use the strapi-docs MCP and docs.strapi.io
-│   ├── companions.md           # registry of companion skills (capability, status, fallback) + promotion checklist
+│   ├── strapi-build-cookbook.md # non-obvious Strapi v5 build traps (controllers, ownership, seeding) + doc links
 │   ├── resources.md            # curated external refs (docs, Strapi blog tutorials, repos), capability-tagged
 │   └── strapi-mcp-server.md    # built-in Strapi MCP server (v5.47+, beta) — optional product capability
 ├── templates/                  # one .md per stage — the file templates the skill writes
@@ -81,13 +81,13 @@ This skill is designed to run in **any** Claude surface. Detect what's available
 
 | Surface | Detection signal | Output mode |
 |---|---|---|
-| **Claude Code** | `Write`/`Edit`/`Bash` tools available | Create a real folder at `<cwd>/<product-name-kebab-case>/` (or ask user where) and write the six `.md` files there. You can also invoke companion skills (`strapi-configuration`, `add-page`, `dockerize-strapi`). |
+| **Claude Code** | `Write`/`Edit`/`Bash` tools available | Create a real folder at `<cwd>/<product-name-kebab-case>/` (or ask user where) and write the six `.md` files there. |
 | **Claude Desktop** with filesystem MCP | A filesystem MCP server is connected (e.g., `mcp__filesystem__*`) | Write files via the MCP into a user-chosen folder. Ask the user to confirm the path the first time. |
 | **Claude Desktop** without filesystem MCP, or **claude.ai web** | Only `artifacts` / `present_files` / inline display | Produce each stage's content as an **artifact** (`text/markdown`) the user can open, edit, copy, or download. Tell the user how to save them locally. Six artifacts total — one per stage. |
 
-**Stage-6 spec rendering** — regardless of surface, the final `06-claude-code-spec.md` should be self-contained enough that the user can paste it into a fresh Claude Code session and start building. If the user is *already* in Claude Code, offer to invoke `strapi-configuration` directly after stage 6 instead of just emitting the spec.
+**Stage-6 spec rendering** — regardless of surface, the final `06-claude-code-spec.md` must be self-contained enough that the user can paste it into a fresh Claude Code session and build straight from it + the official Strapi docs.
 
-**Companion skills** (registry: `references/companions.md`) only run inside **Claude Code**, and only when actually installed. In Desktop/web — and for any user who doesn't have a given skill — reference the capability in the build spec (with its fallback) for the user's future Claude Code session, but don't try to invoke the skill. (`add-page` is Astro-specific — only reference it when the user chose Astro in stage 4.)
+**Self-contained build spec** — the spec never depends on any other skill being installed. Describe each build step concretely (commands, schemas, config) so any future Claude Code session can execute it from the spec + the official Strapi docs alone.
 
 **Strapi docs lookup** works on all surfaces:
 - `strapi-docs` MCP if connected (Desktop + Code both support MCP)
@@ -208,7 +208,7 @@ Drive the requirements directly from stages 1 and 2. For each item in the user j
 | Backend / CMS | **Strapi v5** | Headless CMS with admin UI, REST + GraphQL out of the box, content types map cleanly from stage 3 |
 | Database | **PostgreSQL** | Strapi's recommended production DB; works on Strapi Cloud and most hosts |
 | Hosting (backend) | **Strapi Cloud** | Managed Strapi: zero infra, automated upgrades, built-in CDN/media, Postgres included. See `references/strapi-cloud-deploy.md` |
-| API style | **Strapi REST** with route middlewares for population (GraphQL plugin if the frontend needs it) | Matches Strapi's defaults; companion skills assume REST |
+| API style | **Strapi REST** with route middlewares for population (GraphQL plugin if the frontend needs it) | Matches Strapi's defaults |
 | Frontend | **User's choice — always ask** (first-class: Next.js, TanStack Start, Astro, Vue/Nuxt) | Strapi is headless; any frontend works. No silent default. See `references/frontend-frameworks.md` |
 | Auth | **strapi-community/plugin-better-auth** ⚠️ *beta — confirm first* | Brings Better Auth into Strapi — modern session/social/2FA. **Maintainers say beta, not for production**; needs Strapi ≥ 5.45 and removes Users & Permissions. Confirm in stage 4; else use stock U&P. See `references/auth-better-auth.md` |
 
@@ -218,7 +218,7 @@ Drive the requirements directly from stages 1 and 2. For each item in the user j
 2. **Frontend — always ask, never assume.** There is no silent default. Once chosen, that choice parameterizes stages 5-6 (scaffold command, route tree, env-var prefix, auth wiring) per `references/frontend-frameworks.md`.
 3. **Auth — confirm before defaulting to Better Auth.** The better-auth plugin is the preferred default *but it is beta and not recommended for production by its maintainers*, requires Strapi ≥ 5.45, and removes Users & Permissions. Say this plainly and ask: *"For auth I'd suggest the Better Auth plugin — it's modern (social, 2FA, passkeys) but currently beta, so not ideal if you're launching to production soon. The conservative choice is Strapi's built-in Users & Permissions. Which fits?"* Record the choice and its implications (the permissions model differs — see below).
 4. **MCP server — ask whether the product needs AI agents to manage its content.** If stage 3 flagged AI/agent read/write of content (assistant / copilot / automation over the CMS), ask plainly: *"Do you want to expose Strapi's built-in MCP server so AI agents can read and write your content? It's built into Strapi v5.47+ but currently **beta** — great for an internal or agent-driven tool, but hold off if you need a stable production surface right now."* **Off by default** — enable only on a clear yes. If enabled, bump the Strapi version floor to **≥ 5.47** and record the scoped-token plan. See `references/strapi-mcp-server.md`.
-5. Listen to preferences. If they push back on Strapi Cloud (cost, region, on-prem requirement), capture it and move to a self-hosted Strapi option (and invoke the `dockerize-strapi` skill in stage 6).
+5. Listen to preferences. If they push back on Strapi Cloud (cost, region, on-prem requirement), capture it and move to a self-hosted Strapi option (spec the Dockerfile + `docker-compose` with Postgres in stage 6 — see the Strapi Docker guide on https://docs.strapi.io).
 6. For each area below, either confirm their choice (with a brief sanity-check against the requirements) or suggest options if they're undecided. When suggesting, give 2-3 options with tradeoffs — don't just hand down a winner.
 7. For each decision, capture the **why** — what requirement or preference drove the choice.
 
@@ -276,7 +276,7 @@ When you're unsure how a Strapi feature works (lifecycle hooks, dynamic zone que
 - **MCP server** — *only if enabled in stage 4.* Note `mcp.enabled` in `config/server`, which content types/actions are exposed, the scoped Admin API token strategy (least-privilege per use case), any custom tools added via a plugin (`strapi.ai.mcp`), and the beta caveats (no media upload, dynamic zones untyped, stateless `POST /mcp` only). See `references/strapi-mcp-server.md`
 - **Auth flows (Better Auth)** — sign-up, sign-in, sign-out, password reset, social providers (which ones), session storage, and how the frontend gets the session. Reference https://github.com/strapi-community/plugin-better-auth and https://better-auth.com
 - **Permissions & roles** — *depends on the stage-4 auth choice.* **Stock Users & Permissions**: roles (Public, Authenticated, custom) and what each can read/write per content type. **Better Auth path**: content-API permissions are governed by `@strapi-community/plugin-api-permissions` instead (U&P is removed) — describe permissions in those terms. Admin roles for the editorial side either way. See `references/auth-better-auth.md`
-- **Lifecycles / policies / middlewares** — any logic that fires on create/update/delete (e.g., slug generation, cache invalidation, sending email)
+- **Lifecycles / policies / middlewares** — any logic that fires on create/update/delete (e.g., slug generation, cache invalidation, sending email). For server-set fields (e.g. `owner`), per-record ownership (an `is-owner` policy), and owner-scoped reads, follow `references/strapi-build-cookbook.md` — the naive controller approaches return 400 in v5
 - **Pages & key components (frontend)** — the route/page tree in the **chosen framework's** convention (`app/`, `src/routes/`, `src/pages/`, or `pages/`). For each route: where it fetches Strapi data (loader/Server Component/`useFetch`/frontmatter), components, and any client interactivity. See `references/frontend-frameworks.md`
 - **State management** — server state via the framework's data layer (loaders / Server Components / `useFetch`) plus TanStack Query for client refetches where needed; URL state for filters; minimal client state
 - **Background jobs / scheduled tasks** — Strapi cron tasks (`config/cron-tasks.ts`, with `cron.enabled` in `config/server`) or external (e.g., Strapi Cloud doesn't expose long-running workers — flag if needed)
@@ -295,10 +295,9 @@ This file should be **self-contained** — Claude Code shouldn't need to read th
 
 **Up-front instructions to bake into the spec for the build session**:
 - Use the **strapi-docs MCP** (if installed) for any Strapi API question; otherwise `WebFetch` https://docs.strapi.io.
-- Invoke the companion skill **`strapi-configuration`** to scaffold the Strapi project and content types from this spec rather than hand-rolling.
-- If the Better Auth path was chosen, use the **`better-auth-setup`** companion skill for the auth install/config (it handles the three plugins, removes U&P, and the zod peer-dep fix).
-- Use **`add-page`** only when the frontend is **Astro** and you're adding a new content-type-backed page after the initial scaffold (it generates Astro pages — not for Next.js/TanStack/Vue).
-- Use **`dockerize-strapi`** only if the user opted out of Strapi Cloud in stage 4.
+- The spec is **self-contained** — it never assumes any other skill is installed. Every build step is described concretely (commands, schemas, config) so the build session can execute it from the spec + the official Strapi docs alone.
+- Heed `references/strapi-build-cookbook.md` for the non-obvious Strapi v5 traps (server-set fields like `owner` via the Document Service, owner-scoped reads, an `is-owner` policy, seeding loginable U&P users + both roles) — the steps a build session gets wrong by default.
+- For the Better Auth path, follow the official Strapi tutorial linked in `references/auth-better-auth.md`.
 
 **Required sections**:
 
@@ -307,15 +306,15 @@ This file should be **self-contained** — Claude Code shouldn't need to read th
 3. **Repo layout** — typical: monorepo or two folders (`apps/cms` Strapi + `apps/web` frontend), or two separate repos
 4. **Setup commands** — concrete commands for both the backend and frontend. Use the **chosen framework's** scaffold command (see `references/frontend-frameworks.md`)
 5. **Build order (milestones)** — discrete chunks Claude Code can tackle one at a time. Each milestone has a clear "done when…" criterion. Default milestone shape:
-   - **M1 — Strapi scaffold + Postgres + Strapi Cloud project linked** (use `strapi-configuration` skill)
-   - **M2 — Content types, components, dynamic zones, draft/publish, i18n, permissions** (use `strapi-configuration`)
-   - **M3 — Auth**: Better Auth path → use `better-auth-setup` (installs the 3 plugins, removes U&P, configures providers); or stock U&P path → configure Public/Authenticated roles
+   - **M1 — Strapi scaffold + Postgres + Strapi Cloud project linked**
+   - **M2 — Content types, components, dynamic zones, draft/publish, i18n, permissions**
+   - **M3 — Auth**: Better Auth path → install the 3 plugins, remove U&P, configure providers (follow the official tutorial in `references/auth-better-auth.md`); or stock U&P path → configure Public/Authenticated roles
    - **M4 — Custom controllers, lifecycles, route middlewares (default population)**
    - **M5 — Frontend scaffold + routes/pages + data fetching calling Strapi** (chosen framework)
    - **M6 — Auth UI wired to the auth client; protected routes work**
    - **M7 — Seed data + media uploads**
    - **M8 — Strapi Cloud deploy + frontend deploy + smoke test of core loop**
-6. **Strapi schemas** — copied from stage 5, formatted as Strapi v5 schema JSON (or as instructions to the `strapi-configuration` skill)
+6. **Strapi schemas** — copied from stage 5, formatted as Strapi v5 content-type `schema.json` (per the Content-Type Builder format in the docs)
 7. **API surface** — copied from stage 5: enabled REST endpoints, default population middlewares, custom routes/controllers, GraphQL (if any)
 8. **Auth** — install steps, config, providers, frontend client wiring for the chosen approach (Better Auth or U&P)
 9. **Frontend route/page tree** — file paths in the chosen framework's convention (`app/`, `src/routes/`, `src/pages/`, or `pages/`), data fetching, components

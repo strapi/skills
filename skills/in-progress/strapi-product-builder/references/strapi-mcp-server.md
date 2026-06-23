@@ -41,7 +41,7 @@ export default ({ env }) => ({
 - Dev-mode utility: a `log` tool.
 
 ## Extending with custom tools
-Register custom MCP tools from a Strapi **plugin** via the `strapi.ai.mcp` service — use this when the agent needs domain actions beyond CRUD (e.g. "approve order", "recompute totals"). Walkthrough in the blog linked above. In Claude Code, the plugin-scaffolding patterns (e.g. the `strapi-custom-field` companion's `@strapi/sdk-plugin` flow) help create the plugin shell.
+Register custom MCP tools from a Strapi **plugin** via the `strapi.ai.mcp` service — use this when the agent needs domain actions beyond CRUD (e.g. "approve order", "recompute totals"). Walkthrough in the blog linked above. Scaffold the plugin shell with `npx @strapi/sdk-plugin init` (see the Strapi plugin SDK docs on https://docs.strapi.io).
 
 ## Caveats (beta)
 - **Cannot upload new media** — can only reference existing files.
