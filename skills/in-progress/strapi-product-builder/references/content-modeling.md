@@ -2,6 +2,24 @@
 
 Use this when filling in **stage 5** schemas. Look up specifics via the `strapi-docs` MCP or https://docs.strapi.io before writing schema JSON.
 
+## Who authors this content? (decide this first)
+
+Before modeling a content type, decide **who creates and edits it** — it sets the auth surface and permissions, and it's the #1 thing a brief leaves ambiguous when it just says *"editors."*
+
+**The question: is this person part of your team/operations, or a user of the product?**
+
+| Author | Surface | Auth / roles |
+|---|---|---|
+| **Team / staff** (editors, writers, ops) | **Strapi admin panel** (`/admin`) | Admin roles (Editor, Author, custom). Purpose-built: rich editor, draft & publish, media library, audit. |
+| **End-users** (customers, members, contributors) | **Your custom frontend → content API** | U&P `Authenticated`/custom role (or `plugin-api-permissions` on the Better Auth path), scoped to the minimum `create`/`update`, with an `is-owner` policy for per-record ownership. |
+
+**Best practice:**
+- **Editorial / team content → admin panel.** Don't rebuild the CMS in your frontend for your own staff, and don't give end-users admin accounts.
+- **User-generated content → content API + U&P.** Non-staff who author content (marketplace sellers, community authors) are still **end-users** — frontend + U&P + ownership policy, never admin accounts.
+- **Submit → review → publish:** end-users `create` via U&P (often into draft); staff review/publish in the admin panel. This is the common "submission queue" pattern.
+
+Record the answer per content type in stage 5's "Permissions & roles" so the build session doesn't guess.
+
 ## The four primitives
 
 | Primitive | When to use | API shape |
