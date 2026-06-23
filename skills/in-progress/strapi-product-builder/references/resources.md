@@ -17,6 +17,7 @@ Authoritative external sources the skill can cite when generating stage-5/6 outp
 | Better Auth — setup | *Strapi Better Auth Tutorial: Setup Guide for Strapi v5 and Next.js 16* — https://strapi.io/blog/strapi-better-auth-tutorial-setup-guide-for-strapi-v5-and-next-js-16 | strapi-blog | Strapi v5 (5.45+), Next.js 16 | 2026-05-21 |
 | Better Auth — plugins | https://github.com/strapi-community/plugin-better-auth | reference-repo | v5 | live |
 | Better Auth — library | https://better-auth.com | official-docs | — | live |
+| Strapi MCP server (built-in feature) | https://docs.strapi.io/cms/features/strapi-mcp-server | official-docs | Strapi v5 (5.47+, beta) | live |
 | Extend the Strapi MCP server with custom tools (plugin) | *How To Extend Strapi's MCP Server With Custom Tools via a Plugin* — https://strapi.io/blog/how-to-extend-strapi-s-mcp-server-with-a-custom-tools-via-a-plugin | strapi-blog | Strapi v5 (5.47+) | 2026-06-13 |
 
 `type`: `official-docs` (durable — cite freely) · `strapi-blog` (walkthrough — re-verify commands/versions before use) · `reference-repo` (example code to read, not copy blindly).

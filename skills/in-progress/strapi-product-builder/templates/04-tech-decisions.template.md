@@ -61,6 +61,11 @@ For each decision: what was chosen, what other options were considered, and why 
 ## Analytics & monitoring
 - **Choice**: [PostHog | Plausible | Sentry | ...]
 
+## MCP server (AI agent access)
+- **Enabled**: no (default) | yes — only if the product needs AI agents to read/write its content
+- **If yes**: Strapi v5.47+ built-in MCP server (**beta**); `mcp.enabled` in `config/server`; endpoint `POST /mcp`; scoped Admin API token; custom tools via a plugin (`strapi.ai.mcp`)
+- **Why**: ...
+
 ## Styling
 - **Choice**: Tailwind
 - **Component library**: [shadcn/ui | none | other]

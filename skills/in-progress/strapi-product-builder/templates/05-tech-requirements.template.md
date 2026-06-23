@@ -53,6 +53,14 @@
 ### GraphQL (if applicable)
 - Query `articles(filters, pagination)` — fields: ...
 
+## MCP server (if enabled in stage 4)
+> Only if the product exposes Strapi's built-in MCP server (v5.47+, **beta**). Delete this section otherwise. See `references/strapi-mcp-server.md`.
+- Enabled via `mcp: { enabled: true }` in `config/server`; endpoint `POST /mcp`
+- Auth: scoped **Admin API token** (`Authorization: Bearer <token>`), least-privilege per use case
+- Exposed content types / actions: [e.g. `api::article.article` → list/get/create/update/publish]
+- Custom tools (optional): [plugin + `strapi.ai.mcp` registrations, e.g. `approve-order`]
+- Caveats (beta): no new media uploads, dynamic zones untyped, stateless `POST`-only
+
 ## Auth
 > Choose one based on stage 4. Use the matching block; delete the other.
 
