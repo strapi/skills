@@ -17,6 +17,7 @@ The output is six markdown files (`01-product.md` through `06-claude-code-spec.m
   - Auth: **`@strapi-community/plugin-better-auth`** ⚠️ *(currently beta — maintainers say not for production; needs Strapi ≥ 5.45 and removes Users & Permissions)*, or stock **Users & Permissions** for production/conservative builds
   - Styling: Tailwind
 - *Optionally* accelerates the build with companion Claude Code skills **when they're installed** (`strapi-configuration`, `better-auth-setup`, `add-page` [Astro only], `dockerize-strapi`, `strapi-custom-field`) — these are experimental/optional and most users won't have them, so the generated spec always works without them. See the registry in `references/companions.md`.
+- **Optional Strapi MCP server** — if the product needs AI agents to read/write its content, stage 4 can enable Strapi's built-in MCP server (v5.47+, beta). Off by default. See `references/strapi-mcp-server.md`.
 - Uses the `strapi-docs` MCP for fact-checking when installed; falls back to https://docs.strapi.io
 
 ## Folder layout
@@ -126,6 +127,10 @@ The skill runs as a **structured interview** — six stages, one at a time:
 | 6 | Build-ready Claude Code spec with milestones | `06-claude-code-spec.md` |
 
 You can jump back and revise any earlier stage at any time — the skill will ask whether downstream files need to be updated.
+
+**The output** is a project folder with those six `.md` files (in Claude Code/Desktop) or six copyable artifacts (claude.ai web). `06-claude-code-spec.md` is the deliverable — a self-contained build spec (stack, repo layout, setup commands, milestones, schemas, API surface, auth, env vars, deployment) you hand to a fresh Claude Code session to actually build the project.
+
+> **See real output first:** [`examples/trailhead/`](examples/trailhead/) is a complete worked example — all six files for a sample product.
 
 ### Tips
 
