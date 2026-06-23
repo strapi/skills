@@ -124,7 +124,7 @@
 - (provider-specific vars)
 
 ### Frontend
-> Prefix browser-safe values with the framework's public prefix (`NEXT_PUBLIC_` / `VITE_` / `PUBLIC_` / `NUXT_PUBLIC_`). Below shown with `VITE_` as an example.
+> Prefix browser-safe values with the framework's public prefix (`NEXT_PUBLIC_` / `VITE_` / `PUBLIC_` / `NUXT_PUBLIC_`). Below shown with `VITE_` as an example — **replace it with your stage-4 framework's prefix** (e.g. `NEXT_PUBLIC_` for Next.js).
 - `VITE_STRAPI_URL` — public Strapi backend URL (browser-safe)
 - `STRAPI_API_TOKEN` — read-only token for **server-side** SSR fetches. **No public prefix** — must stay server-only or it leaks into the client bundle
 - `BETTER_AUTH_URL` — same as backend (Better Auth path only)

@@ -30,6 +30,10 @@
 ## Integrations
 - [Capability]: [what the product needs from a third party]
 
+## AI / agent access (MCP)
+- AI agent / assistant reads or writes content: yes/no — [which content types; read and/or write]
+- If yes → candidate for Strapi's built-in MCP server (v5.47+, beta); the enable/disable decision is made in stage 4
+
 ## Non-functional requirements
 - Performance: ...
 - Scale: ...

@@ -193,7 +193,7 @@ Drive the requirements directly from stages 1 and 2. For each item in the user j
 - Are there compliance or regulatory needs (data residency, healthcare, finance)?
 - How many users do you expect in the first 6 months? First year?
 
-**File template**: write `03-requirements.md` from `templates/03-requirements.template.md` (the fuller version — it splits editorial vs user-generated content and flags reusable shapes/dynamic zones and i18n/draft-publish). Sections: Core features · Account & auth · Content the product manages · Localization & drafts · Integrations · Non-functional requirements · Out of scope.
+**File template**: write `03-requirements.md` from `templates/03-requirements.template.md` (the fuller version — it splits editorial vs user-generated content and flags reusable shapes/dynamic zones and i18n/draft-publish). Sections: Core features · Account & auth · Content the product manages · Localization & drafts · Integrations · AI / agent access (MCP) · Non-functional requirements · Out of scope.
 
 ---
 
@@ -217,9 +217,10 @@ Drive the requirements directly from stages 1 and 2. For each item in the user j
 1. State the defaults above and ask: *"Backend will be Strapi v5 deployed to Strapi Cloud unless you have a reason to choose otherwise. For the frontend — I support Next.js, TanStack Start, Astro, or Vue/Nuxt well (or another framework you prefer). Anything you already have in mind?"*
 2. **Frontend — always ask, never assume.** There is no silent default. Once chosen, that choice parameterizes stages 5-6 (scaffold command, route tree, env-var prefix, auth wiring) per `references/frontend-frameworks.md`.
 3. **Auth — confirm before defaulting to Better Auth.** The better-auth plugin is the preferred default *but it is beta and not recommended for production by its maintainers*, requires Strapi ≥ 5.45, and removes Users & Permissions. Say this plainly and ask: *"For auth I'd suggest the Better Auth plugin — it's modern (social, 2FA, passkeys) but currently beta, so not ideal if you're launching to production soon. The conservative choice is Strapi's built-in Users & Permissions. Which fits?"* Record the choice and its implications (the permissions model differs — see below).
-4. Listen to preferences. If they push back on Strapi Cloud (cost, region, on-prem requirement), capture it and move to a self-hosted Strapi option (and invoke the `dockerize-strapi` skill in stage 6).
-5. For each area below, either confirm their choice (with a brief sanity-check against the requirements) or suggest options if they're undecided. When suggesting, give 2-3 options with tradeoffs — don't just hand down a winner.
-6. For each decision, capture the **why** — what requirement or preference drove the choice.
+4. **MCP server — ask whether the product needs AI agents to manage its content.** If stage 3 flagged AI/agent read/write of content (assistant / copilot / automation over the CMS), ask plainly: *"Do you want to expose Strapi's built-in MCP server so AI agents can read and write your content? It's built into Strapi v5.47+ but currently **beta** — great for an internal or agent-driven tool, but hold off if you need a stable production surface right now."* **Off by default** — enable only on a clear yes. If enabled, bump the Strapi version floor to **≥ 5.47** and record the scoped-token plan. See `references/strapi-mcp-server.md`.
+5. Listen to preferences. If they push back on Strapi Cloud (cost, region, on-prem requirement), capture it and move to a self-hosted Strapi option (and invoke the `dockerize-strapi` skill in stage 6).
+6. For each area below, either confirm their choice (with a brief sanity-check against the requirements) or suggest options if they're undecided. When suggesting, give 2-3 options with tradeoffs — don't just hand down a winner.
+7. For each decision, capture the **why** — what requirement or preference drove the choice.
 
 **Areas to cover**:
 

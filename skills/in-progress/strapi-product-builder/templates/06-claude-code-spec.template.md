@@ -129,7 +129,7 @@ apps/web/src/routes/      # Next.js: app/ · Astro: src/pages/ · Nuxt: pages/
 - (provider-specific)
 
 ### Frontend (apps/web)
-> Public prefix depends on the framework: `NEXT_PUBLIC_` / `VITE_` / `PUBLIC_` / `NUXT_PUBLIC_`. Shown with `VITE_`.
+> Public prefix depends on the framework: `NEXT_PUBLIC_` / `VITE_` / `PUBLIC_` / `NUXT_PUBLIC_`. Shown with `VITE_` — **replace with your stage-4 framework's prefix** (e.g. `NEXT_PUBLIC_STRAPI_URL` for Next.js).
 - `VITE_STRAPI_URL` — public Strapi backend URL (browser-safe)
 - `STRAPI_API_TOKEN` — server-only read token for SSR fetches; **no public prefix** (would leak to the client bundle)
 - `BETTER_AUTH_URL` — same as backend (Better Auth path only)
