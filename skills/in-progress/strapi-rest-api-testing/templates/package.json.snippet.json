@@ -1,0 +1,11 @@
+{
+  "scripts": {
+    "test": "NODE_ENV=test jest --forceExit --detectOpenHandles",
+    "test:watch": "NODE_ENV=test jest --watch"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testPathIgnorePatterns": ["/node_modules/", ".tmp", ".cache", "dist"],
+    "testMatch": ["**/tests/**/*.test.js"]
+  }
+}
