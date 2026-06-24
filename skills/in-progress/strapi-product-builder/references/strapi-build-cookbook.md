@@ -5,7 +5,7 @@ This skill produces a *spec*; the build session generates most code itself from 
 > Source of truth: https://docs.strapi.io (or the `strapi-docs` MCP). Re-verify at build time — Strapi's APIs move.
 
 ## Scaffold
-`npx create-strapi-app@latest <dir>` — TypeScript is the default; `--quickstart` is deprecated and conflicts with `--dbclient`. Non-interactive: add `--skip-cloud --dbclient=postgres --dbhost=… --dbport=… --dbname=… --dbusername=… --dbpassword=…` (SQLite for local-only).
+`npx create-strapi-app@latest <dir>` — TypeScript is the default; `--quickstart` is deprecated and conflicts with `--dbclient`. Non-interactive: add `--skip-cloud --dbclient=postgres --dbhost=… --dbport=… --dbname=… --dbusername=… --dbpassword=…` (SQLite for local-only). For a *truly* non-interactive run also pass `--non-interactive --no-example --no-git-init` — the `--db*` flags alone still prompt. The scaffold may not generate `JWT_SECRET` (Users & Permissions needs it) or set `DATABASE_FILENAME` for SQLite — add both to `.env`.
 
 ## Set a server-only field on create (e.g. `owner` = current user)
 **Trap:** mutating `ctx.request.body.data.owner` then `super.create(ctx)` → **400 "Invalid key owner"** (v5 re-validates the body against user-writable fields and rejects private relations).
@@ -59,12 +59,24 @@ Pick the layer by the context the logic needs:
 
 Refs (official Strapi blog, see `resources.md`): *What are Document Service Middleware, and What Happened to Lifecycle Hooks?* · *When To Use Lifecycle Hooks in Strapi* · *How To Use Register Function To Customize Your Strapi App*.
 
+## Authorization gates (plan limits, quotas, role checks) → route policy
+For a per-request **allow/deny → 403** (free-plan limit, quota, role gate), use a **route policy** (`config: { policies: ['global::is-within-plan'] }`) that returns `false`. It runs after auth, before the controller, so owner-stamping stays in the controller. This is the *authorization* layer — distinct from the controller / Document-Service-middleware / lifecycle split above. Docs: https://docs.strapi.io/cms/backend-customization/policies
+> **TS caveat:** `Core.Policy` types `ctx` without `.state`/`.params` and forbids an async return — a realistic async policy won't compile against it. Type the handler yourself (or `any`), same as the `sanitizeInput` cast above.
+
 ## Seed end-user accounts that can actually log in
 **Trap:** `strapi.query('plugin::users-permissions.user').create({ data: { password } })` stores the password **unhashed** → login fails (hashing lives in the U&P flow, not `query`/`entityService`).
 **Fix:** create users through the U&P user service (or the `/api/auth/local/register` flow) so the password hashes. Docs: https://docs.strapi.io/cms/features/users-permissions
 
 ## Seed BOTH roles
 Seed Public (`find`/`findOne` on public content) **and** Authenticated (`create`/`update`/`delete` on user-owned content) — an ownership app is unusable if only Public is seeded.
+
+## Extending a plugin content type (e.g. the U&P `user`) = full replace, NOT merge
+**Trap:** a `src/extensions/users-permissions/content-types/user/schema.json` containing only your *added* attributes is treated as the **complete** schema — Strapi drops the base fields (`email`, `username`, `password`, `role`), the DB ends up without those columns (`no such column: t0.email`), and auth + seeding crash (DB-corrupting). **Fix:** the extension file must reproduce the **entire** base user schema **plus** your additions. (Verified on v5.48 — copy the base schema from `node_modules/@strapi/plugin-users-permissions`.)
+
+## Webhooks / unauthenticated third-party callbacks (e.g. Stripe)
+- **Raw body for signature verification:** `strapi::body` parses the body, but signature checks (e.g. `stripe.webhooks.constructEvent`) need the **raw bytes**. In `config/middlewares.ts` use `{ name: 'strapi::body', config: { includeUnparsed: true } }`, then read the raw string from **`ctx.request.body[Symbol.for('unparsedBody')]`**. (A named `unparsed` import from `koa-body` does **not** exist — use the symbol. Not in the official middleware docs; verified empirically.)
+- **Public route:** make the webhook reachable with no JWT via **`config: { auth: false }`** on the route (not a Public-role permission).
+- **Carry identity:** pass the Strapi user id in Stripe's `client_reference_id`/`metadata` at checkout so the webhook knows whom to update.
 
 ## Small gotchas
 - **SQLite local seed:** an empty `DATABASE_FILENAME=` resolves to a directory → `SQLITE_CANTOPEN`. Set `DATABASE_FILENAME=.tmp/data.db`.
