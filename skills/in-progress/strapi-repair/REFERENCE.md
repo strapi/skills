@@ -14,7 +14,7 @@
 
 **Source:** [PR #26737 — security defaults for create-strapi-app](https://github.com/strapi/strapi/pull/26737) (contributor doc: `docs/docs/docs/01-core/configuration/01-security-defaults.md` in that PR).
 
-Audit with `scripts/audit-security.js`. Apply values from the PR / future docs — do not duplicate full config blocks in the skill.
+Complete the checklist in [SKILL.md — Security audit](../strapi-repair/SKILL.md#security-audit-checklist) by reading project files. Apply values from the PR / future docs — do not duplicate full config blocks in the skill.
 
 | Area | Config file | What to check |
 | --- | --- | --- |

@@ -1,7 +1,8 @@
 'use strict';
 
 /**
- * Read-only Strapi project diagnostics.
+ * Read-only Strapi project diagnostics (environment facts only).
+ * Does not parse or audit config source — use the security checklist in SKILL.md for that.
  * Run from the Strapi application root: node scripts/diagnose.js
  */
 

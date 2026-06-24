@@ -13,7 +13,7 @@ Fix **Strapi 5 application projects** (`package.json`, `config/`, `src/api/`). N
 2. **Verify after each fix** — `strapi build`, `strapi develop`, or `GET /_health` (204).
 3. **Don't mark done** until the reported symptom is resolved, or you've identified an upstream bug with a linked issue.
 4. **Security hardening** — recommend by default on repair/audit; apply **breaking** changes only with explicit user approval (see [Security audit](#security-audit)).
-5. **Prefer official docs and linked references** over inventing config — see [REFERENCE.md](REFERENCE.md).
+5. **Scripts for facts only** — run `diagnose.js` for environment inventory; **read config files yourself** for security audit (no regex scripts on source).
 
 ## Triage
 
@@ -27,12 +27,13 @@ Fix **Strapi 5 application projects** (`package.json`, `config/`, `src/api/`). N
 | pnpm / monorepo | [Package manager](#package-manager-repair) |
 | "Secure" / "harden" / general repair | [Security audit](#security-audit) at end |
 
-Run read-only scripts first (copy into project or run from skill path):
+Run read-only diagnostics first (copy into project or run from skill path):
 
 ```bash
 node scripts/diagnose.js
-node scripts/audit-security.js
 ```
+
+For security defaults, **read** `config/` and `.env` — see [Security audit](#security-audit).
 
 ## Workflow
 
@@ -63,7 +64,9 @@ Follow the [clean reinstall ladder](REFERENCE.md#clean-reinstall-ladder) in orde
 
 ### Phase 4 — Security audit (default on repair)
 
-Unless the user opted out of config changes, run `audit-security.js` and report gaps. Apply safe items; propose breaking items for approval. Source: [PR #26737 security defaults](https://github.com/strapi/strapi/pull/26737) and [REFERENCE.md — Security](REFERENCE.md#security-hardening-pr-26737).
+Unless the user opted out of config changes, complete the [security audit checklist](#security-audit-checklist) by **reading** project files. Apply safe items; propose breaking items for approval.
+
+Source: [PR #26737](https://github.com/strapi/strapi/pull/26737), [REFERENCE.md — Security](REFERENCE.md#security-hardening-pr-26737).
 
 ## Admin & build repair
 
@@ -105,18 +108,35 @@ Full checklist: [REFERENCE.md — pnpm](REFERENCE.md#pnpm--monorepo).
 
 ## Security audit
 
-**Source of truth:** [PR #26737](https://github.com/strapi/strapi/pull/26737) (feat: security defaults for new apps). Existing projects should adopt the same values manually until documented on [docs.strapi.io](https://docs.strapi.io).
+**Source of truth:** [PR #26737](https://github.com/strapi/strapi/pull/26737). Read config files — do not regex-scan source. Resolve `env()` / factory exports mentally (e.g. `env.bool('X', true)` counts as enabled).
 
-Run `node scripts/audit-security.js` — read-only report of what's present vs missing.
+### Security audit checklist
 
-| Item | Safe to apply without asking? |
-| --- | --- |
-| Missing `JWT_SECRET` in `.env` | Yes — generate and add |
-| `webhooks.populateRelations: false` if unset | Usually yes |
-| `strictParams: true` | **No** — breaks clients with unknown query params |
-| `jwtManagement: 'refresh'` + httpOnly sessions | **No** — breaks legacy JWT-only clients |
-| Upload allow/deny MIME lists | **No** — may block existing upload types |
-| Production CORS / SSL / proxy | **No** — needs deployment context |
+Read these files (`.ts` or `.js`):
+
+- `config/api.*`
+- `config/plugins.*`
+- `config/server.*`
+- `.env` (secrets only — never log values)
+
+Report to the user as a table:
+
+| Check | Status | Effective value | Breaking if applied? | Action |
+| --- | --- | --- | --- | --- |
+| `rest.strictParams` | present / missing / via env | … | **Yes** | … |
+| `documents.strictParams` | … | … | **Yes** | … |
+| `users-permissions.jwtManagement: 'refresh'` | … | … | **Yes** | … |
+| `users-permissions.sessions.httpOnly` | … | … | **Yes** | … |
+| `upload.security.allowedTypes` | … | … | **Yes** | … |
+| `upload.security.deniedTypes` | … | … | **Yes** | … |
+| `webhooks.populateRelations: false` | … | … | Usually no | … |
+| `.env` `JWT_SECRET` | … | … | No | … |
+
+**Status** = `present` | `missing` | `unclear` (split config, imports, or dynamic logic — explain).
+
+**Apply without asking:** missing `JWT_SECRET`; unset `populateRelations` when user wants PR defaults.
+
+**Ask first:** `strictParams`, refresh JWT / httpOnly sessions, upload MIME lists, production CORS / SSL / `server.proxy`.
 
 Also recommend for production (from PR doc): restrict CORS, `DATABASE_SSL`, `server.proxy` behind reverse proxy. Details: [REFERENCE.md — Security](REFERENCE.md#security-hardening-pr-26737).
 
