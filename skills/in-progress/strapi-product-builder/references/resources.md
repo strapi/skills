@@ -20,6 +20,9 @@ Authoritative external sources the skill can cite when generating stage-5/6 outp
 | Strapi MCP server (built-in feature) | https://docs.strapi.io/cms/features/strapi-mcp-server | official-docs | Strapi v5 (5.47+, beta) | live |
 | Extend the Strapi MCP server with custom tools (plugin) | *How To Extend Strapi's MCP Server With Custom Tools via a Plugin* — https://strapi.io/blog/how-to-extend-strapi-s-mcp-server-with-a-custom-tools-via-a-plugin | strapi-blog | Strapi v5 (5.47+) | 2026-06-13 |
 | Next.js + Strapi starter | https://github.com/strapi/LaunchPad — Official Strapi Demo application | reference-repo | v5 | live |
+| Lifecycle hooks vs Document Service middleware | *What are Document Service Middleware, and What Happened to Lifecycle Hooks?* — https://strapi.io/blog/what-are-document-service-middleware-and-what-happened-to-lifecycle-hooks-1 | strapi-blog | Strapi v5 | 2025-02-13 |
+| When to use lifecycle hooks | *When To Use Lifecycle Hooks in Strapi* — https://strapi.io/blog/when-to-use-lifecycle-hooks-in-strapi | strapi-blog | Strapi v5 | 2025-02-26 |
+| Customizing via register() | *How To Use Register Function To Customize Your Strapi App* — https://strapi.io/blog/how-to-use-register-function-to-customize-your-strapi-app | strapi-blog | Strapi v5 | 2025-02-27 |
 
 `type`: `official-docs` (durable — cite freely) · `strapi-blog` (walkthrough — re-verify commands/versions before use) · `reference-repo` (example code to read, not copy blindly).
 

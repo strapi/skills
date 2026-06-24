@@ -41,6 +41,22 @@ async find(ctx) {
 ## Per-record ownership (`is-owner` policy)
 A global policy loads the record and compares its owner to `ctx.state.user.id`; apply it on `update`/`delete` in the route config. Docs: https://docs.strapi.io/cms/backend-customization/policies
 
+## Where does logic go? (v5 layering — lifecycle hooks are NOT the default anymore)
+Pick the layer by the context the logic needs:
+- **Needs the request/auth user** (stamp `owner`/`author` = current user, auth checks) → **controller only.** Lifecycle hooks and Document Service middleware have **no request / `ctx.state.user` access** — so "stamp author from session in `beforeCreate`" cannot work.
+- **Document-level logic, no request** (slug generation, derived fields, cross-type transforms, notifications) → **Document Service middleware**, registered in `register()`:
+  ```ts
+  // src/index.ts → register({ strapi })
+  strapi.documents.use(async (ctx, next) => {
+    if (ctx.uid === 'api::trail.trail' && ctx.action === 'create')
+      ctx.params.data.slug ??= slugify(ctx.params.data.title)
+    return next()            // always return next()
+  })
+  ```
+- **Lifecycle hooks** (`beforeCreate`, …) → **avoid for business logic in v5.** They fire at the DB layer (no request context) and fire **twice** when publishing (draft + published version). Reserve for low-level DB constraints.
+
+Refs (official Strapi blog, see `resources.md`): *What are Document Service Middleware, and What Happened to Lifecycle Hooks?* · *When To Use Lifecycle Hooks in Strapi* · *How To Use Register Function To Customize Your Strapi App*.
+
 ## Seed end-user accounts that can actually log in
 **Trap:** `strapi.query('plugin::users-permissions.user').create({ data: { password } })` stores the password **unhashed** → login fails (hashing lives in the U&P flow, not `query`/`entityService`).
 **Fix:** create users through the U&P user service (or the `/api/auth/local/register` flow) so the password hashes. Docs: https://docs.strapi.io/cms/features/users-permissions

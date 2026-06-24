@@ -67,8 +67,8 @@ cd apps/web && npm install better-auth @tanstack/react-query
 **Done when**: a user can sign up (email + Google), sign in, and sign out from the Next.js app.
 
 ### M4 — Lifecycles / policies / middlewares
-- [ ] Trail slug generation (`beforeCreate`/`beforeUpdate`)
-- [ ] Report `beforeCreate` stamps `author` from session; 403 if unauthenticated
+- [ ] Trail slug generation via Document Service middleware (`strapi.documents.use()` in `register()`) — v5-preferred over lifecycle hooks
+- [ ] Report controller `create` stamps `author` from `ctx.state.user` via the Document Service (lifecycle hooks have no request context); 403 if unauthenticated
 - [ ] `global::is-owner` policy on `PUT/DELETE /api/reports/:documentId`
 - [ ] `populate-trail` middleware
 
