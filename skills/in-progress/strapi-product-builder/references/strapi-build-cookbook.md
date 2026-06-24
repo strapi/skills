@@ -15,14 +15,16 @@ This skill produces a *spec*; the build session generates most code itself from 
 import { factories } from '@strapi/strapi'
 export default factories.createCoreController('api::product.product', ({ strapi }) => ({
   async create(ctx) {
-    const data = await this.sanitizeInput(ctx.request.body.data, ctx)
+    const data = (await this.sanitizeInput(ctx.request.body.data, ctx)) as Record<string, any>
     const entry = await strapi.documents('api::product.product').create({
-      data: { ...data, owner: ctx.state.user.id },
+      data: { ...data, owner: ctx.state.user.id } as any,
     })
     return this.transformResponse(await this.sanitizeOutput(entry, ctx))
   },
 }))
 ```
+> **TS strict build:** the casts above are required in a default (TypeScript) Strapi project — `sanitizeInput` returns a union (raw spread → `TS2698`) and the Document Service `data` param is strictly typed, so the dev server won't compile without them. Drop the casts in a JS project.
+
 Docs: Document Service https://docs.strapi.io/cms/api/document-service · Controllers https://docs.strapi.io/cms/backend-customization/controllers
 
 ## Owner-scoped reads ("only my orders")
@@ -67,3 +69,4 @@ Seed Public (`find`/`findOne` on public content) **and** Authenticated (`create`
 ## Small gotchas
 - **SQLite local seed:** an empty `DATABASE_FILENAME=` resolves to a directory → `SQLITE_CANTOPEN`. Set `DATABASE_FILENAME=.tmp/data.db`.
 - **`sanitizeOutput` strips private relations** (like `owner`) from responses. If the frontend needs "is this mine?", expose a derived boolean or a `/me/...` route, not the raw relation.
+- **`uid`/slug fields are NOT auto-filled on API / Document Service / seed writes** (only admin-panel writes auto-generate them). Generate the slug in Document Service middleware for **every** content type whose `uid` you filter on — miss one and `?filters[slug]=…` silently returns nothing. (Spec tip: in stage 5, list slug middleware for *all* uid-filtered types, not just the obvious ones.)
