@@ -7,17 +7,25 @@ description: Bootstraps and writes REST API integration tests for Strapi 5 appli
 
 Write **in-process HTTP tests** (Supertest → `strapi.server.httpServer`). Not browser E2E. Not monorepo `yarn test:api`.
 
-**Official harness reference (source of truth for the full Strapi test harness):** [Strapi 5 Testing guide — Create the Strapi test harness](https://docs.strapi.io/cms/testing#create-the-strapi-test-harness)
+## Source of truth (official docs)
 
-This skill adds **safe test-database setup**, **bootstrap gates**, **bundled templates**, and **helpers** on top of that guide.
+Copy harness and database setup **verbatim** from the [Strapi 5 Testing guide](https://docs.strapi.io/cms/testing). Do not maintain a forked harness in the user project.
+
+| Docs section | What to copy |
+| --- | --- |
+| [Install tools](https://docs.strapi.io/cms/testing#install-tools) | Jest + Supertest deps, `test` script, Jest config in `package.json` |
+| [Set up a testing environment](https://docs.strapi.io/cms/testing#set-up-a-testing-environment) | `config/env/test/database.js` |
+| [Create the Strapi test harness](https://docs.strapi.io/cms/testing#create-the-strapi-test-harness) | `tests/ts-compiler-options.js`, `tests/ts-runtime.js`, `tests/strapi.js` |
+
+This skill adds **only** what the docs do not cover well: bootstrap gates, test-env safety checks, a `/_health` smoke test, and auth/permission helpers.
 
 ## Hard rules
 
-1. **Never use the dev or production database.** Tests run only with `NODE_ENV=test` and `config/env/test/database.js` (or equivalent env overrides). Run [scripts/verify-test-env.js](scripts/verify-test-env.js) before the first `setupStrapi()`.
+1. **Never use the dev or production database.** Tests run only with `NODE_ENV=test` and `config/env/test/database.js`. Run `tests/verify-test-env.js` before the first `setupStrapi()`.
 2. **Do not write feature tests until the smoke test passes.** Bootstrap is incomplete until `tests/app.test.js` is green.
 3. **Do not mark the task done until the requested test passes** (`yarn test` or `npm test`).
-4. **Default stack:** Jest + Supertest + SQLite test DB. Do not introduce Vitest or a second runner on first setup unless the project already standardizes on Vitest everywhere.
-5. **Do not pass `distDir` in the harness** unless the user explicitly needs it — see [REFERENCE.md](REFERENCE.md#dist-directory-pitfall).
+4. **Default stack:** Jest + Supertest + SQLite test DB. Do not introduce Vitest on first setup unless the project already uses Vitest everywhere.
+5. **Do not pass `distDir` in the harness** — see [REFERENCE.md](REFERENCE.md#dist-directory-pitfall).
 
 ## Workflow
 
@@ -25,10 +33,10 @@ This skill adds **safe test-database setup**, **bootstrap gates**, **bundled tem
 
 Check:
 
-- `package.json` — existing test runner, `test` script
-- `config/database.*` and `config/env/test/` — test DB already configured?
-- `tests/strapi.js` or `tests/setup.js` — harness exists?
-- Config file extensions (`.js` vs `.ts`) — determines harness variant (below)
+- `package.json` — test runner, `test` script, existing Jest config
+- `config/env/test/database.js` — test DB configured?
+- `tests/strapi.js` — harness from official docs?
+- `config/` file extensions (`.ts` needs the full three-file harness from docs)
 - Content types under `src/api/` for the endpoint under test
 - `@strapi/plugin-users-permissions` if auth is involved
 
@@ -36,31 +44,51 @@ If test infra is missing → Phase 1. If present but failing → fix harness fir
 
 ### Phase 1 — Bootstrap (first time only)
 
-**1. Install dependencies**
+**1. Dependencies** — per [Install tools](https://docs.strapi.io/cms/testing#install-tools):
 
 ```bash
 yarn add -D jest supertest sqlite3
-# or: npm install --save-dev jest supertest sqlite3
 ```
 
-**2. Test database** — copy [templates/config/env/test/database.js](templates/config/env/test/database.js) to the project. Default is isolated SQLite at `.tmp/test.db`. For Postgres/MySQL or CI options, see [REFERENCE.md](REFERENCE.md#test-database-options).
+**2. `package.json`** — merge into the existing file (do not replace the whole file):
 
-**3. Test harness** — choose one path:
+- Add or update `scripts.test` to run with `NODE_ENV=test`:
 
-| Project config | Harness |
-| --- | --- |
-| `config/*.js` / `config/*.json` only | Copy [templates/tests/strapi.js](templates/tests/strapi.js) |
-| `config/*.ts` (or `.mts`/`.cts`) | Copy **all three** files from the [official guide](https://docs.strapi.io/cms/testing#create-the-strapi-test-harness): `tests/ts-compiler-options.js`, `tests/ts-runtime.js`, `tests/strapi.js` — do not improvise TS loader patches |
+  ```json
+  "test": "NODE_ENV=test jest --forceExit --detectOpenHandles"
+  ```
 
-**4. Smoke test** — copy [templates/tests/app.test.js](templates/tests/app.test.js). It asserts `GET /_health` returns `204` (built-in Strapi health route).
+- Add a `jest` block if missing (merge with any existing `jest` config):
 
-**5. Helpers (optional now, needed soon)** — copy [templates/tests/helpers/](templates/tests/helpers/) when tests need auth or Content API permissions.
+  ```json
+  "jest": {
+    "testEnvironment": "node",
+    "testPathIgnorePatterns": ["/node_modules/", ".tmp", ".cache"],
+    "testMatch": ["**/tests/**/*.test.js"]
+  }
+  ```
 
-**6. `package.json` scripts and Jest config** — merge [templates/package.json.snippet.json](templates/package.json.snippet.json). The `test` script **must** set `NODE_ENV=test`.
+  On Windows, use `cross-env NODE_ENV=test` if `NODE_ENV=test` fails in the shell.
 
-**7. `.gitignore`** — ensure `.tmp/` is ignored.
+**3. Test database** — copy `config/env/test/database.js` from [Set up a testing environment](https://docs.strapi.io/cms/testing#set-up-a-testing-environment). For Postgres/MySQL, adapt per [REFERENCE.md](REFERENCE.md#test-database-options).
 
-**8. Verify environment** — copy [scripts/verify-test-env.js](scripts/verify-test-env.js) to `tests/verify-test-env.js`, then run:
+**4. Test harness** — copy all harness files from [Create the Strapi test harness](https://docs.strapi.io/cms/testing#create-the-strapi-test-harness):
+
+- `tests/ts-compiler-options.js`
+- `tests/ts-runtime.js`
+- `tests/strapi.js`
+
+Use the same three files for **JS and TS** projects. The TS loader patches are harmless when config is JavaScript-only.
+
+**5. Smoke test** — copy [templates/tests/app.test.js](templates/tests/app.test.js) (uses `GET /_health`, not the docs' `/api/hello` example — no custom route required).
+
+**6. Safety check** — copy [scripts/verify-test-env.js](scripts/verify-test-env.js) to `tests/verify-test-env.js`.
+
+**7. Helpers** — copy [templates/tests/helpers/](templates/tests/helpers/) when tests need auth or Content API permissions.
+
+**8. `.gitignore`** — ensure `.tmp/` is ignored.
+
+**9. Verify environment:**
 
 ```bash
 NODE_ENV=test node tests/verify-test-env.js
@@ -73,15 +101,13 @@ yarn test tests/app.test.js
 ```
 
 - **Pass** → continue to Phase 3.
-- **Fail** → fix bootstrap only (database config, env vars, TS harness, open handles). **Do not** add endpoint tests until this passes.
+- **Fail** → fix bootstrap only. **Do not** add endpoint tests until this passes.
 
 Common fixes: [REFERENCE.md](REFERENCE.md#troubleshooting)
 
 ### Phase 3 — Write the requested test
 
-Place tests under `tests/integration/api/` (create the folder if needed).
-
-Pattern:
+Place tests under `tests/integration/api/`.
 
 ```js
 const request = require('supertest');
@@ -96,9 +122,6 @@ afterAll(async () => {
 });
 
 it('GET /api/articles returns published articles', async () => {
-  // 1. Seed via Document Service if needed
-  // 2. Grant permissions if Content API returns 403
-  // 3. Request + assert
   const res = await request(strapi.server.httpServer)
     .get('/api/articles')
     .expect(200);
@@ -106,11 +129,11 @@ it('GET /api/articles returns published articles', async () => {
 });
 ```
 
-- Seed data with `strapi.documents('api::type.type').create({ data, status: 'published' })` (Strapi 5).
-- **403 on Content API** → use [templates/tests/helpers/permissions.js](templates/tests/helpers/permissions.js). See [REFERENCE.md](REFERENCE.md#content-api-permissions).
-- **Auth** → use [templates/tests/helpers/auth.js](templates/tests/helpers/auth.js).
+- Seed with `strapi.documents('api::type.type').create({ data, status: 'published' })` (Strapi 5).
+- **403** → [templates/tests/helpers/permissions.js](templates/tests/helpers/permissions.js) — [REFERENCE.md](REFERENCE.md#content-api-permissions)
+- **Auth** → [templates/tests/helpers/auth.js](templates/tests/helpers/auth.js)
 
-See [examples/get-collection.test.js](examples/get-collection.test.js).
+See [examples/get-collection.test.js](examples/get-collection.test.js) and [Test a basic API endpoint](https://docs.strapi.io/cms/testing#test-a-basic-api-endpoint) for more patterns.
 
 ### Phase 4 — Verify and finish
 
@@ -120,19 +143,21 @@ yarn test path/to/new.test.js
 
 Iterate until green. Report: files added, how to run tests, which test DB option is active.
 
-## Templates (copy into the user project)
+## Skill-owned templates (copy into the user project)
+
+These are **not** in the official docs — the only files to copy from this skill repo:
 
 | File | Purpose |
 | --- | --- |
-| [templates/config/env/test/database.js](templates/config/env/test/database.js) | Isolated test DB (default SQLite) |
-| [templates/tests/strapi.js](templates/tests/strapi.js) | Harness for JS config projects |
-| [templates/tests/app.test.js](templates/tests/app.test.js) | Smoke test (`/_health`) |
+| [templates/tests/app.test.js](templates/tests/app.test.js) | Smoke test (`GET /_health` → 204) |
 | [templates/tests/helpers/auth.js](templates/tests/helpers/auth.js) | JWT login helper |
-| [templates/tests/helpers/permissions.js](templates/tests/helpers/permissions.js) | Grant role permissions in tests |
-| [templates/package.json.snippet.json](templates/package.json.snippet.json) | `test` script + Jest block |
+| [templates/tests/helpers/permissions.js](templates/tests/helpers/permissions.js) | Grant role permissions |
+| [scripts/verify-test-env.js](scripts/verify-test-env.js) | Pre-flight DB / `NODE_ENV` safety |
+
+Everything else (harness, test DB config, Jest setup) comes from [docs.strapi.io/cms/testing](https://docs.strapi.io/cms/testing).
 
 ## Advanced
 
-- Test DB options, safety checks, CI, Windows SQLite notes: [REFERENCE.md](REFERENCE.md)
+- Test DB options, safety, CI, Windows SQLite: [REFERENCE.md](REFERENCE.md)
 - Example endpoint test: [examples/get-collection.test.js](examples/get-collection.test.js)
-- Unit tests (mocked Strapi): route to [strapi-testing](../strapi-testing/SKILL.md) — use [official unit patterns](https://docs.strapi.io/cms/testing#mock-strapi-for-plugin-unit-tests) until `strapi-unit-testing` ships
+- Unit tests: route to [strapi-testing](../strapi-testing/SKILL.md)

@@ -29,7 +29,9 @@ if (nodeEnv !== 'test') {
 
 const testDbConfig = path.join(process.cwd(), 'config', 'env', 'test', 'database.js');
 if (!fs.existsSync(testDbConfig)) {
-  fail(`Missing ${testDbConfig} — copy templates/config/env/test/database.js`);
+  fail(
+    `Missing ${testDbConfig} — copy from https://docs.strapi.io/cms/testing#set-up-a-testing-environment`
+  );
 }
 
 const client = process.env.DATABASE_CLIENT || 'sqlite';

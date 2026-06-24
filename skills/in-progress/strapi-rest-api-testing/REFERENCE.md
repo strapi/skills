@@ -14,18 +14,16 @@
 
 ## Test database options
 
-**Default (recommended):** SQLite file isolated from dev data.
+**Default:** copy `config/env/test/database.js` from [Set up a testing environment](https://docs.strapi.io/cms/testing#set-up-a-testing-environment). Isolated SQLite at `.tmp/test.db` when `NODE_ENV=test`.
 
-Copy [templates/config/env/test/database.js](../templates/config/env/test/database.js). Uses `.tmp/test.db` when `NODE_ENV=test`.
-
-| Option | When to use | Config |
+| Option | When to use | Notes |
 | --- | --- | --- |
-| **SQLite file** (default) | Almost all projects; fast; no external services | `DATABASE_CLIENT=sqlite`, `DATABASE_FILENAME=.tmp/test.db` |
-| **SQLite in-memory** | Fastest; no file cleanup; can be flaky on Windows with file locks | `DATABASE_FILENAME=:memory:` in harness env |
-| **Dedicated Postgres** | Tests need Postgres-specific SQL/types | Separate DB named `*_test*`; never share dev DB name/host |
-| **Dedicated MySQL** | Same as Postgres | Separate `strapi_test` database |
+| **SQLite file** (default) | Almost all projects | From official docs |
+| **SQLite in-memory** | Fastest; Windows file-lock issues | Set `DATABASE_FILENAME=:memory:` in harness env |
+| **Dedicated Postgres** | Postgres-specific SQL/types | DB name must contain `test` |
+| **Dedicated MySQL** | Same as Postgres | e.g. `strapi_test` |
 
-Harness env vars (set in `tests/strapi.js`) override connection details during tests. The test script must run with `NODE_ENV=test` so Strapi loads `config/env/test/database.js`.
+Harness env vars in `tests/strapi.js` (from docs) set secrets and can override `DATABASE_*`. The `test` npm script must set `NODE_ENV=test`.
 
 **Postgres example** (`config/env/test/database.js`):
 
@@ -44,39 +42,32 @@ module.exports = ({ env }) => ({
 });
 ```
 
-Require `DATABASE_NAME` (or host) to contain `test` — [verify-test-env.js](../scripts/verify-test-env.js) enforces this for non-SQLite clients.
+[verify-test-env.js](scripts/verify-test-env.js) requires `test` in the database name for non-SQLite clients.
 
 ## Database safety checklist
 
 Before every first `setupStrapi()` in a session:
 
-1. `NODE_ENV` is `test` (via npm/yarn script, not assumed).
-2. `config/env/test/database.js` exists and does not point at production credentials.
-3. Dev `.env` is **not** relied on for DB host/name during tests — harness sets test secrets and SQLite defaults.
-4. `.tmp/` is in `.gitignore`.
-5. Run `node tests/verify-test-env.js` (copy from [scripts/verify-test-env.js](../scripts/verify-test-env.js)).
+1. `NODE_ENV` is `test` (via npm/yarn script).
+2. `config/env/test/database.js` exists (from official docs) and does not use production credentials.
+3. `.tmp/` is in `.gitignore`.
+4. Run `NODE_ENV=test node tests/verify-test-env.js`.
 
-**Abort** if:
-
-- `NODE_ENV` is `development` or `production`
-- Postgres/MySQL database name lacks `test` (case-insensitive) and user did not confirm a dedicated test instance
-- `DATABASE_URL` points at a known production hostname pattern (configure blocklist in verify script)
+**Abort** if `NODE_ENV` is not `test`, or Postgres/MySQL database name lacks `test` without explicit user confirmation.
 
 ## dist directory pitfall
 
-If `yarn develop` compiled config into `dist/config/` and tests force `distDir: './dist'`, Jest may load the **dev** database config instead of `config/env/test/`.
+From [official docs](https://docs.strapi.io/cms/testing#set-up-a-testing-environment):
 
-**Recommendations (from [official docs](https://docs.strapi.io/cms/testing#set-up-a-testing-environment)):**
-
-- Do **not** pass custom `distDir` in the test harness; use `createStrapi().load()`.
-- Avoid running `yarn develop` immediately before `yarn test`.
-- If tests fail with wrong DB after a dev build, remove `dist/` or rebuild specifically for tests.
+- Do **not** pass custom `distDir` in the test harness.
+- Avoid `yarn develop` immediately before `yarn test`.
+- If wrong DB after a dev build, remove `dist/`.
 
 ## Content API permissions
 
-`403 Forbidden` on `/api/*` usually means the role lacks permission — not a routing bug.
+`403 Forbidden` on `/api/*` → missing role permission.
 
-Use [templates/tests/helpers/permissions.js](../templates/tests/helpers/permissions.js):
+Use [templates/tests/helpers/permissions.js](templates/tests/helpers/permissions.js):
 
 ```js
 const { grantPublicPermissions } = require('../helpers/permissions');
@@ -87,39 +78,33 @@ beforeAll(async () => {
 });
 ```
 
-Permission action IDs follow `api::<singular>.<singular>.<action>` (e.g. `find`, `findOne`, `create`).
+Action IDs: `api::<singular>.<singular>.<action>`.
 
 ## Authentication
 
-For `users-permissions` JWT flows, use [templates/tests/helpers/auth.js](../templates/tests/helpers/auth.js).
+Use [templates/tests/helpers/auth.js](templates/tests/helpers/auth.js). The [official harness](https://docs.strapi.io/cms/testing#create-the-strapi-test-harness) patches `user.add` for the authenticated role — keep that when copying from docs.
 
-The [official harness](https://docs.strapi.io/cms/testing#create-the-strapi-test-harness) patches `user.add` to assign the authenticated role automatically — include that patch when copying the full TS harness from docs.
+For auth API patterns, see [Test API authentication](https://docs.strapi.io/cms/testing#test-api-authentication).
 
 ## Windows and SQLite
 
-[Official docs](https://docs.strapi.io/cms/testing) warn that SQLite **file** tests can fail on Windows due to file locking. Prefer `:memory:` for Windows CI, or use Postgres in Docker for local Windows dev.
+[Official docs](https://docs.strapi.io/cms/testing) warn SQLite **file** tests can fail on Windows. Prefer `:memory:` or Postgres in Docker.
 
 ## Troubleshooting
 
 | Symptom | Likely cause | Fix |
 | --- | --- | --- |
-| Timeout on first boot | Strapi cold start | `jest.setTimeout(30000)` in harness; increase if needed |
-| `Config file not loaded ... database.ts` | TS config without harness patches | Use full harness from [official guide](https://docs.strapi.io/cms/testing#create-the-strapi-test-harness) |
-| Wrong database / dev data in tests | `dist/` or missing `NODE_ENV=test` | See [dist directory pitfall](#dist-directory-pitfall) |
+| Timeout on first boot | Cold start | `jest.setTimeout(30000)` in harness (docs include this) |
+| `Config file not loaded ... database.ts` | Harness not from docs | Copy full harness from [official guide](https://docs.strapi.io/cms/testing#create-the-strapi-test-harness) |
+| Wrong database | `dist/` or missing `NODE_ENV=test` | [dist directory pitfall](#dist-directory-pitfall) |
 | 403 on Content API | Missing permissions | [Content API permissions](#content-api-permissions) |
-| Jest hangs after tests | Open handles | `--forceExit --detectOpenHandles` in test script |
-| `Unsupported database client` | Driver not installed | `sqlite3` for SQLite; `pg` / `mysql2` for others |
+| Jest hangs | Open handles | `--forceExit --detectOpenHandles` in test script |
+| `Unsupported database client` | Missing driver | `sqlite3`, `pg`, or `mysql2` |
 
 ## CI (GitHub Actions)
 
-Official workflow: [Automate tests with GitHub Actions](https://docs.strapi.io/cms/testing#automate-tests-with-github-actions).
-
-For Postgres in CI, start a service container and set `DATABASE_*` env vars to the `*_test` database only.
+[Automate tests with GitHub Actions](https://docs.strapi.io/cms/testing#automate-tests-with-github-actions). For Postgres in CI, use a service container and a `*_test` database only.
 
 ## Vitest escape hatch
 
-If the project **already** uses Vitest for all tests:
-
-- Port Jest config equivalents (`testEnvironment: 'node'`, timeouts).
-- Keep the same `tests/strapi.js` harness and `NODE_ENV=test` requirement.
-- Do not add Vitest alongside Jest on greenfield bootstrap.
+Only if the project **already** uses Vitest everywhere: port Jest settings, keep the same `tests/strapi.js` from docs and `NODE_ENV=test`. Do not add Vitest alongside Jest on greenfield bootstrap.

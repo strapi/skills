@@ -11,4 +11,4 @@ Use `skills/in-progress/` as a staging area while a skill is being drafted, test
 | Skill | Purpose |
 | --- | --- |
 | [strapi-testing](strapi-testing/SKILL.md) | Router — picks REST API integration vs unit vs GraphQL vs out-of-scope |
-| [strapi-rest-api-testing](strapi-rest-api-testing/SKILL.md) | Bootstrap Jest + Supertest + isolated test DB; write REST API integration tests |
+| [strapi-rest-api-testing](strapi-rest-api-testing/SKILL.md) | REST API integration tests — docs for harness/DB; skill adds smoke test, safety checks, helpers |
