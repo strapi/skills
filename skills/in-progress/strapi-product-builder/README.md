@@ -40,20 +40,22 @@ This skill works in **Claude Code**, **Claude Desktop**, and **claude.ai web**. 
 
 ### Claude Code (recommended for the full experience)
 
-Clone this repo, then copy the skill into a skills folder.
+Clone this repo and `cd` into it, then copy the skill into a skills folder.
 
 Personal install (available in every project on this machine):
 
 ```bash
 git clone https://github.com/strapi/skills.git
-cp -R skills/skills/in-progress/strapi-product-builder ~/.claude/skills/
+cd skills
+cp -R skills/in-progress/strapi-product-builder ~/.claude/skills/
 ```
 
 Project install (only available inside one project). Prefer the cross-agent path **`.agents/skills/`** ([Agent Skills](https://agentskills.io/specification.md)); many teams symlink **`.claude/skills`** → **`.agents/skills`** for Claude Code.
 
 ```bash
+# from inside the cloned repo (git clone … && cd skills)
 mkdir -p /path/to/your/project/.agents/skills
-cp -R skills/skills/in-progress/strapi-product-builder /path/to/your/project/.agents/skills/
+cp -R skills/in-progress/strapi-product-builder /path/to/your/project/.agents/skills/
 ```
 
 Then start a new Claude Code session — the skill will be auto-discovered. Verify with `/help` (it should appear in the available skills list).
@@ -65,7 +67,7 @@ Then start a new Claude Code session — the skill will be auto-discovered. Veri
 Claude Desktop installs skills from a **zip**. Create one from your clone:
 
 ```bash
-cd skills/skills/in-progress
+cd skills/in-progress
 zip -r strapi-product-builder.zip strapi-product-builder
 ```
 

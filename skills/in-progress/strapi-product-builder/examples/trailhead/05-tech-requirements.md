@@ -22,7 +22,7 @@
 
 - Draft & publish: **yes** (moderators stage trails)
 - Localized: no
-- Lifecycle hooks: `beforeCreate`/`beforeUpdate` — generate `slug` from `name` if missing
+- Slug: generate `slug` from `name` via **Document Service middleware** (`strapi.documents.use()` in `register()`) — not lifecycle hooks (v5)
 
 ### `api::region.region` — collection-type
 | Field | Type | Notes |
@@ -44,7 +44,7 @@
 
 - Draft & publish: **no** (reports are live)
 - Localized: no
-- Lifecycle hooks: `beforeCreate` — stamp `author` from the authenticated session; reject if no session
+- Author: stamped server-side in the `create` **controller** from the authenticated session (Document Service create) — not a `beforeCreate` hook (lifecycles have no session context); 403 if no session
 
 ## Components
 
@@ -102,8 +102,8 @@
 - **Moderator**: edits Trails/Regions in the Strapi **admin** panel (admin role, separate from end-user auth).
 
 ## Lifecycles / policies / middlewares
-- `api::trail.trail` `beforeCreate`/`beforeUpdate`: generate slug from name if empty.
-- `api::report.report` `beforeCreate`: set `author` from session; 403 if unauthenticated.
+- Slug generation (`trail`, `region`): **Document Service middleware** (`strapi.documents.use()` in `register()`) — not lifecycle hooks (no request context; they double-fire on publish in v5). See *What are Document Service Middleware…* and *When To Use Lifecycle Hooks* in `references/resources.md`.
+- `author` on `report`: stamped in the **`create` controller** from the authenticated session (Document Service create) — not a `beforeCreate` hook (no session). 403 if unauthenticated.
 - Policy `global::is-owner` on `PUT/DELETE /api/reports/:documentId`.
 - Middleware `api::trail.populate-trail` on `GET /api/trails*`.
 
