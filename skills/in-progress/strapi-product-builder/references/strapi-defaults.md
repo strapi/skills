@@ -5,7 +5,7 @@ These are the defaults this skill uses unless the user overrides them in stage 4
 | Area | Default | Why |
 |---|---|---|
 | Backend / CMS | **Strapi v5** | Headless CMS with admin UI, REST + GraphQL, content types map cleanly from stage-3 entities. |
-| Database | **PostgreSQL** | Strapi's recommended production DB. Strapi Cloud manages it for you. SQLite is fine *only* for local dev — never spec it for production. |
+| Database | **PostgreSQL** | Strapi's recommended production DB. Strapi Cloud manages it for you. **Strapi v5 is SQL-only — PostgreSQL / MySQL / MariaDB / SQLite. MongoDB and other document/NoSQL databases are NOT supported.** SQLite is fine *only* for local dev — never spec it for production. |
 | Backend hosting | **Strapi Cloud** | Zero-infra managed Strapi: deploy on push, automated upgrades, built-in CDN/media, Postgres included. Dashboard: https://cloud.strapi.io. Docs: https://docs.strapi.io/cloud/getting-started/intro |
 | API style | **Strapi REST** with route middlewares for default population | Matches Strapi's defaults. Add the GraphQL plugin only if the frontend has a real reason. |
 | Frontend | **User's choice — always ask** | Strapi is headless, so any frontend works. This skill is *optimized* for four: **Next.js, TanStack Start, Astro, Vue/Nuxt**. No silent default — pick in stage 4. See `frontend-frameworks.md`. |
@@ -17,6 +17,7 @@ These are the defaults this skill uses unless the user overrides them in stage 4
 ## When to deviate
 
 - **User needs offline-first sync, edge-only, or fully serverless** → Strapi may not fit. Surface this in stage 4 and discuss alternatives honestly.
+- **User insists on MongoDB or another non-SQL / document database** → Strapi v5 is **SQL-only** and cannot use Mongo. This is a hard misfit — surface it in **stage 1**, not stage 4: either switch the DB to PostgreSQL/MySQL, or, if a document model is a genuine hard requirement, Strapi is the wrong backend and they should use a more general product-design skill. Don't carry "MongoDB" forward as if it were a stage-4 toggle.
 - **User has compliance/data-residency needs Strapi Cloud doesn't meet** → keep Strapi v5, switch to self-hosted (Docker on the user's own infra). Spec the Dockerfile + `docker-compose` (Postgres) in stage 6 instead of the Strapi Cloud deploy step (see the Strapi Docker guide on https://docs.strapi.io).
 - **Frontend** → there is no default; ask. Optimized paths exist for Next.js, TanStack Start, Astro, and Vue/Nuxt (see `frontend-frameworks.md`); SvelteKit/SolidStart/Remix/etc. also work — just look up that framework's scaffold/routing/env conventions. Strapi is framework-agnostic; only the frontend artifacts in stages 5-6 change.
 - **User wants a production launch now, or is on Strapi < 5.45** → skip the beta better-auth plugin; use stock **Users & Permissions** (Public/Authenticated roles). Document the chosen auth in stage 5.

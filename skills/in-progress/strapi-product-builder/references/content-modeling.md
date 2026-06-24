@@ -17,6 +17,7 @@ Before modeling a content type, decide **who creates and edits it** — it sets 
 - **Editorial / team content → admin panel.** Don't rebuild the CMS in your frontend for your own staff, and don't give end-users admin accounts.
 - **User-generated content → content API + U&P.** Non-staff who author content (marketplace sellers, community authors) are still **end-users** — frontend + U&P + ownership policy, never admin accounts.
 - **Submit → review → publish:** end-users `create` via U&P (often into draft); staff review/publish in the admin panel. This is the common "submission queue" pattern.
+- **An end-user who is *also* a domain record** (a client/customer/member who logs in **and** is an entity you store) = the U&P `user` (auth identity) linked **one-to-one** to a domain collection (`client`/`profile`). Keep them separate — don't duplicate identity into the domain record, and don't try to make the domain record log in.
 
 Record the answer per content type in stage 5's "Permissions & roles" so the build session doesn't guess.
 

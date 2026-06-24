@@ -125,6 +125,10 @@ Then start the next stage.
 
 **Do not discuss tech in this stage.** If the user brings up frameworks or hosting, note it for stage 4 and steer back.
 
+**Watch for two things that quietly break later stages — reconcile them now, not at stage 5:**
+- **Scope contradiction — especially single-user vs. multi-tenant/SaaS.** "Just a tool for me" and "multiple teams/orgs/gyms use it, white-labeled" are different products: multi-tenancy adds tenant-scoping to *every* entity in stage 5. If the user's framing drifts, name it and pin the MVP scope.
+- **Strapi-fit red flags.** If the user states a hard requirement Strapi v5 can't meet — a document/NoSQL database like **MongoDB** (Strapi is **SQL-only**), or offline-first/edge-only — surface it here, honestly: change the constraint, or recommend a more general product-design skill. Don't carry an impossible assumption forward to stage 4.
+
 **Interview questions to ask** (don't ask them all at once — ask 2-3, wait, follow up):
 
 - In one sentence, what is this product?
@@ -225,7 +229,7 @@ Drive the requirements directly from stages 1 and 2. For each item in the user j
 **Areas to cover**:
 
 - **Backend / CMS** — default Strapi v5. Note Strapi version, Node version target, and whether any plugins are anticipated (i18n, Users & Permissions, GraphQL, custom fields)
-- **Database** — default Postgres on Strapi Cloud. SQLite is fine for local dev only
+- **Database** — default Postgres on Strapi Cloud. SQLite is fine for local dev only. **Strapi v5 is SQL-only (PostgreSQL/MySQL/MariaDB/SQLite); MongoDB / document DBs are not supported** — if the user wants Mongo, that's a stage-1 product-fit issue (Strapi is the wrong backend), not a stage-4 tweak
 - **Hosting — backend** — default Strapi Cloud. Alternatives: Render, Railway, Fly.io, AWS, self-hosted Docker
 - **Hosting — frontend** — Vercel, Netlify, Cloudflare Pages, etc. (all four first-class frameworks deploy to any of these)
 - **Frontend framework** — no default; ask. First-class: **Next.js** (broad ecosystem, app-style products), **TanStack Start** (type-safe full-stack React), **Astro** (content-heavy/static sites), **Vue/Nuxt** (Vue teams). Others (SvelteKit, SolidStart, Remix, plain React) supported too. See `references/frontend-frameworks.md`
