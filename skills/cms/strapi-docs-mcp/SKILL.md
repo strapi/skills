@@ -30,7 +30,17 @@ Per-tool config formats: https://docs.strapi.io/cms/ai/docs-mcp-server#connectio
 
 If the MCP server is unavailable **and** can't be installed, fall back to the public documentation content. No authentication is required for any of these. Prefer them in this order.
 
-### 1. LLMs text files (best for agents — flat, nothing hidden)
+### 1. Per-page Markdown (simplest — add `.md` to any page URL)
+
+Any documentation page is available as flat Markdown by appending `.md` to its URL. All layout components (tabs, accordions, API blocks) are resolved to plain text, so nothing is hidden.
+
+- Page URL:     `https://docs.strapi.io/cms/backend-customization/controllers`
+- Markdown URL: `https://docs.strapi.io/cms/backend-customization/controllers.md`
+- Pattern: append `.md` to any `https://docs.strapi.io/<page-path>`
+
+This is the same content the docs site's **Copy Markdown** button uses.
+
+### 2. LLMs text files (best when you need many pages at once — flat, nothing hidden)
 
 These follow the [llms.txt convention](https://llmstxt.org/) and are the most agent-friendly source: content is flattened to plain Markdown, so nothing is hidden inside tabs or accordions.
 
@@ -43,18 +53,17 @@ These follow the [llms.txt convention](https://llmstxt.org/) and are the most ag
   **Constructing a page URL from `llms.txt`:** entries are protocol-relative paths like `//cms/backend-customization/controllers`. Prepend the docs origin to get the live page as follows:
 
 `//cms/backend-customization/controllers` becomes `https://docs.strapi.io/cms/backend-customization/controllers`
-  
-### 2. Raw Markdown source on GitHub (per-page, authoritative)
 
-Each page is a `.md`/`.mdx` file in [`strapi/documentation`](https://github.com/strapi/documentation). This is the same source the docs site's **Copy Markdown** button fetches. Build the raw URL from the page path:
-  
+### 3. Raw Markdown source on GitHub (per-page, authoritative)
+
+Each page is a `.md`/`.mdx` file in [`strapi/documentation`](https://github.com/strapi/documentation). Use this only if `docs.strapi.io` itself is unreachable. Build the raw URL from the page path:
+
 - Page path:   `/cms/backend-customization/controllers`
 - Raw URL: `https://raw.githubusercontent.com/strapi/documentation/main/docusaurus/docs/cms/backend-customization/controllers.md`
-- Pattern: 
+- Pattern:
   `https://raw.githubusercontent.com/strapi/documentation/main/docusaurus/docs/<page-path>.md`
   where `<page-path>` is the page URL path (drop the leading `/`). Some pages use `.mdx` — if `.md` returns 404, retry with `.mdx`.
 
-### 3. Live HTML page (last resort)
+### 4. Live HTML page (last resort)
 
-Fetch the page directly, e.g. `https://docs.strapi.io/cms/backend-customization/controllers`, and extract the content. Least reliable: some content lives in tabs/accordions and may be missed. Prefer sources 1 and 2 whenever possible.
-
+Fetch the page directly, e.g. `https://docs.strapi.io/cms/backend-customization/controllers`, and extract the content. Least reliable: some content lives in tabs/accordions and may be missed. Prefer sources 1 to 3 whenever possible.
