@@ -58,4 +58,3 @@ Each page is a `.md`/`.mdx` file in [`strapi/documentation`](https://github.com/
 
 Fetch the page directly, e.g. `https://docs.strapi.io/cms/backend-customization/controllers`, and extract the content. Least reliable: some content lives in tabs/accordions and may be missed. Prefer sources 1 and 2 whenever possible.
 
-> Note: a per-page Markdown mode and content negotiation (e.g. requesting `.md` directly) are planned. Until then, the `llms*.txt` files and the raw GitHub source above are the canonical flat-content sources.
