@@ -42,7 +42,6 @@ Quote the exact breaking-change titles and note which are handled by codemods vs
 Fetch the breaking changes page directly (no auth needed). Prefer the flat Markdown form:
 
 - Major-version migrations (e.g. v4 → v5): `https://docs.strapi.io/cms/migration/v4-to-v5/breaking-changes.md`
-- General upgrade reference: `https://docs.strapi.io/cms/upgrade-tool.md`
 
 Use `WebFetch` on the `.md` URL (append `.md` to any `docs.strapi.io` page to get flattened Markdown with nothing hidden in tabs/accordions). If a page 404s as `.md`, retry the HTML URL.
 
