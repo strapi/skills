@@ -60,7 +60,7 @@ Use each breaking-change title as a search seed (grep for the removed/renamed AP
 ### Report and gate
 
 - **Same major (minor/patch upgrade):** State clearly that there are **no breaking changes** — the breaking-changes database is scoped to major migrations only. You still performed the check; say so.
-- **Major upgrade:** Summarize the applicable breaking changes grounded in the codebase scan above, flag which are handled by codemods versus which need manual code updates, call out any **reserved-name collisions** (these may need a database migration — see Step 7), and **pause for the user to confirm** before proceeding.
+- **Major upgrade:** Summarize the applicable breaking changes grounded in the codebase scan above, flag which are handled by codemods versus which need manual code updates, call out any **reserved-name collisions** (these may need a database migration — see Step 7), and **stop and wait for the user's affirmative reply before proceeding — do not continue in the same turn.**
 
 ## Step 3 — Pre-flight safety
 
@@ -111,9 +111,11 @@ Notes:
 - `major` is gated: the project must already be on the latest patch of its current major. If it isn't, run `minor` first, then `major`.
 - Use `to <x.y.z>` when `latest` is blocked by a registry policy (e.g. `min-release-age` in `.npmrc`) or when the user wants an exact version. `to` skips the major-safety check intentionally.
 - For pre-releases, add `--codemods-target <x.y.z>`.
-- Useful flags: `-y/--yes` (auto-confirm prompts), `-d/--debug` (verbose), `-p/--project-path <path>` (non-cwd project).
+- Useful flags: `-y/--yes` (auto-confirm prompts), `-d/--debug` (verbose), `-p/--project-path <path>` (non-cwd project). **Avoid `-y/--yes` for major jumps** — it auto-confirms *every* prompt, including the major-version safety prompt on `latest`. Prefer interactive mode (or explicit per-step user approval) unless the user asked for an unattended run.
 
 The tool updates dependencies, installs them, and runs codemods for the target version. **Do not** substitute a manual `package.json` edit or a bare `npm install` for this step.
+
+If the install phase fails (e.g. `ERESOLVE`), first retry with a **clean `node_modules` and lockfile** (`rm -rf node_modules package-lock.json && npm install`) before falling back to any manual dependency edits — a stale lockfile from the old major is the most common cause and a clean reinstall usually resolves it.
 
 ## Step 6 — Fix the `engines` field
 
@@ -130,7 +132,7 @@ Run these in order. Each destructive or code-changing action **pauses for the us
 ### 7a — Review and offer to fix the codemod gaps
 
 1. Tell the user to **review the changes** the tool made (especially codemod edits and `package.json`) before restarting the app.
-2. Codemods cover common patterns, not everything. Cross-reference the breaking changes flagged as "manual" in Step 2 against the code the codemods actually changed. For anything still unhandled, **ask the user whether they want you to attempt the fixes** in application code. Only edit code after they confirm, and edit _after_ the tool's codemods have been applied (never before — you'd fight the codemods).
+2. Codemods cover common patterns, not everything. Cross-reference the breaking changes flagged as "manual" in Step 2 against the code the codemods actually changed. For anything still unhandled, **ask the user whether they want you to attempt the fixes** in application code — then **wait for their affirmative reply; do not start editing in the same turn.** Only edit code after they confirm, and edit _after_ the tool's codemods have been applied (never before — you'd fight the codemods).
 
 ### 7b — Upgrade incompatible third-party plugins
 
@@ -146,7 +148,7 @@ If Step 2 found an attribute whose name collides with a new **reserved/system na
 
 1. **Ask the user whether to proceed with the rename** at all.
 2. If yes, **ask whether you should generate a database migration** to preserve existing data during the rename.
-3. **Require an explicit backup confirmation before writing or running any migration.** The migration executes against the real database on next boot and the rename is not cleanly reversible, so ask the user to confirm **they have manually backed up the database** — and wait for a clear "yes". Do not proceed on a vague answer, and never take the backup on their behalf as a substitute for their confirmation. If they have not backed up, stop and let them do it first.
+3. **Require an explicit backup confirmation before writing or running any migration.** The migration executes against the real database on next boot and the rename is not cleanly reversible, so ask the user to confirm **they have manually backed up the database** — then **stop and wait for a clear "yes" in a separate reply; do not continue in the same turn.** Do not proceed on a vague answer, and never take the backup on their behalf as a substitute for their confirmation. If they have not backed up, stop and let them do it first.
 4. Only after that confirmation, author the migration following **[reference.md](reference.md)** (placement, ordering gotchas, data-safe rename, system-column collisions, idempotency, `down()`). Do not hand-wave this — the ordering and collision rules there prevent both boot failures and silent data loss.
 
 ### 7d — Verify
