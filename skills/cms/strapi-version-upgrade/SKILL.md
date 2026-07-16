@@ -22,6 +22,7 @@ Follow the steps below in order.
    ```
 
    The `latest` tag is the newest stable release. `legacy` is typically the latest v4.
+
 3. Establish the target. If the user named a version or release type (`major`/`minor`/`patch`/`latest`/a specific `x.y.z`), use it. Otherwise default to `latest` and confirm with the user.
 4. Classify the jump using [semantic versioning](https://semver.org/): compare the major/minor/patch of current vs. target. **Only a change in the major number introduces breaking changes.** Minor and patch releases are backward-compatible by definition.
 
@@ -59,7 +60,7 @@ Use each breaking-change title as a search seed (grep for the removed/renamed AP
 ### Report and gate
 
 - **Same major (minor/patch upgrade):** State clearly that there are **no breaking changes** — the breaking-changes database is scoped to major migrations only. You still performed the check; say so.
-- **Major upgrade:** Summarize the applicable breaking changes grounded in the codebase scan above, flag which are handled by codemods versus which need manual code updates, call out any **reserved-name collisions** (these may need a database migration — see Step 6), and **pause for the user to confirm** before proceeding.
+- **Major upgrade:** Summarize the applicable breaking changes grounded in the codebase scan above, flag which are handled by codemods versus which need manual code updates, call out any **reserved-name collisions** (these may need a database migration — see Step 7), and **pause for the user to confirm** before proceeding.
 
 ## Step 3 — Pre-flight safety
 
@@ -71,7 +72,29 @@ Offer a dry run first to preview changes without modifying files:
 npx @strapi/upgrade <target> --dry
 ```
 
-## Step 4 — Run the upgrade with the upgrade tool
+## Step 4 — Check the running Node version (before running the tool)
+
+The `@strapi/upgrade` tool is itself a Node CLI: it runs under whatever Node `npx` is invoked with, and it declares the **same** Node requirement as the target Strapi. So the running Node — not just `package.json`'s `engines` — must satisfy the target's range **before** you run the tool. If it doesn't, both the upgrade run and the subsequent app boot happen on an unsupported runtime.
+
+1. Read the currently running Node version (`node -v`).
+2. Read the Node range the **target** Strapi supports:
+
+   ```bash
+   npm view @strapi/strapi@<target-x.y.z> engines
+   ```
+
+   (Cross-check against the docs' recommended Node for that major — Strapi recommends the active LTS.)
+
+3. **If the running Node already satisfies the target's range**, continue to Step 5.
+4. **If it does not, Node must be upgraded before the upgrade.** How you handle this depends on whether the user has a **Node version manager** — check for one before deciding (look for `nvm`, `fnm`, or `volta` on `PATH`, and for a `.nvmrc` / `.node-version` / Volta field in the repo):
+   - **If a version manager is present:** **prompt the user to ask whether they want you to upgrade the Node version** for them, and gate on their confirmation before any runtime change. Only if they confirm:
+     - Pick a Node version **inside the target's range**, preferring an LTS release the target lists.
+     - Switch via their version manager (never a global install) so the change is reversible — the old Strapi can still run on the old Node if a rollback is needed. Suggest pinning it in the repo (`.nvmrc` / `.node-version` / Volta field) so CI and teammates move together.
+   - **If no version manager is present:** do **not** attempt to change the system Node yourself — a global runtime swap is risky and not cleanly reversible. Instead, **tell the user to fix the Node version on their own**, and recommend they do it by **installing a version manager first** (`nvm`, `fnm`, or `volta`), then selecting a Node version inside the target's range. Stop and wait for them to sort the runtime out before continuing.
+   - **Do not reinstall `node_modules` immediately after switching Node.** At that point `package.json` still pins the **old** Strapi, so a clean install would rebuild the _old_ dependency tree against the new Node — which, if the ranges are disjoint (below), can fail the `engines` check or leave native modules built against the wrong ABI, breaking the working state before the tool has moved you forward. The clean reinstall belongs **after** Step 5, once the tool has rewritten `package.json` to the target (see Step 7d).
+   - **When the current and target Node ranges do not overlap at all** (e.g. current supports Node 18, target requires ≥20), a clean in-place swap isn't possible while staying on the old runtime. The safe ordering is: on the **old** Node, first get the current major to its **latest patch** (run `npx @strapi/upgrade minor`), so that step stays rollback-able; _then_ switch Node into the target's range; _then_ run the major upgrade in Step 5. Only after that upgrade run do you reinstall dependencies.
+
+## Step 5 — Run the upgrade with the upgrade tool
 
 Run the official tool from the project root. Choose the command form that matches the target:
 
@@ -84,6 +107,7 @@ npx @strapi/upgrade to <x.y.z>      # a specific published version
 ```
 
 Notes:
+
 - `major` is gated: the project must already be on the latest patch of its current major. If it isn't, run `minor` first, then `major`.
 - Use `to <x.y.z>` when `latest` is blocked by a registry policy (e.g. `min-release-age` in `.npmrc`) or when the user wants an exact version. `to` skips the major-safety check intentionally.
 - For pre-releases, add `--codemods-target <x.y.z>`.
@@ -91,30 +115,24 @@ Notes:
 
 The tool updates dependencies, installs them, and runs codemods for the target version. **Do not** substitute a manual `package.json` edit or a bare `npm install` for this step.
 
-## Step 5 — Fix the `engines` field
+## Step 6 — Fix the `engines` field
 
-The upgrade tool updates dependencies but **does not touch `package.json`'s `engines` field**. A stale `engines.node` range left over from the old major can fail the compatibility check and **block `install`** (`npm`/`yarn`/`pnpm`) after the upgrade.
+The upgrade tool updates dependencies but **does not touch `package.json`'s `engines` field**. A stale `engines.node` range left over from the old major can fail the compatibility check and **block `install`** (`npm`/`yarn`/`pnpm`) after the upgrade. (This is the declared range in `package.json` — distinct from the _running_ Node you checked in Step 4.)
 
 1. Read `engines` from the project's `package.json`.
-2. Find the Node range the **target** Strapi version supports. Prefer the target's own manifest:
-
-   ```bash
-   npm view @strapi/strapi@<target-x.y.z> engines
-   ```
-
-   (Cross-check against the docs' recommended Node versions for that major if needed.)
+2. Reuse the target's Node range from Step 4 (`npm view @strapi/strapi@<target-x.y.z> engines`).
 3. If the project's `engines.node` is narrower than or incompatible with the target's, **offer to replace it** with the correct range for the target major, and apply the edit once the user confirms. Leave it alone if it's already compatible.
 
-## Step 6 — Post-upgrade: codemod gaps, plugins, migrations
+## Step 7 — Post-upgrade: codemod gaps, plugins, migrations
 
 Run these in order. Each destructive or code-changing action **pauses for the user to confirm** — the user is in charge of every change beyond what the tool applied automatically.
 
-### 6a — Review and offer to fix the codemod gaps
+### 7a — Review and offer to fix the codemod gaps
 
 1. Tell the user to **review the changes** the tool made (especially codemod edits and `package.json`) before restarting the app.
-2. Codemods cover common patterns, not everything. Cross-reference the breaking changes flagged as "manual" in Step 2 against the code the codemods actually changed. For anything still unhandled, **ask the user whether they want you to attempt the fixes** in application code. Only edit code after they confirm, and edit *after* the tool's codemods have been applied (never before — you'd fight the codemods).
+2. Codemods cover common patterns, not everything. Cross-reference the breaking changes flagged as "manual" in Step 2 against the code the codemods actually changed. For anything still unhandled, **ask the user whether they want you to attempt the fixes** in application code. Only edit code after they confirm, and edit _after_ the tool's codemods have been applied (never before — you'd fight the codemods).
 
-### 6b — Upgrade incompatible third-party plugins
+### 7b — Upgrade incompatible third-party plugins
 
 If any third-party plugin (from Step 2's `package.json`/`config/plugins` scan, or surfaced by install/boot errors) is **not compatible** with the target Strapi version:
 
@@ -122,7 +140,7 @@ If any third-party plugin (from Step 2's `package.json`/`config/plugins` scan, o
 2. **Ask the user before upgrading each plugin individually** — confirm every plugin bump separately; never batch-upgrade plugins silently.
 3. Apply the confirmed version bump and reinstall.
 
-### 6c — Reserved-name collisions → custom database migration
+### 7c — Reserved-name collisions → custom database migration
 
 If Step 2 found an attribute whose name collides with a new **reserved/system name** in the target major, a rename is required and renaming a column risks data loss. In that case:
 
@@ -131,7 +149,8 @@ If Step 2 found an attribute whose name collides with a new **reserved/system na
 3. **Require an explicit backup confirmation before writing or running any migration.** The migration executes against the real database on next boot and the rename is not cleanly reversible, so ask the user to confirm **they have manually backed up the database** — and wait for a clear "yes". Do not proceed on a vague answer, and never take the backup on their behalf as a substitute for their confirmation. If they have not backed up, stop and let them do it first.
 4. Only after that confirmation, author the migration following **[reference.md](reference.md)** (placement, ordering gotchas, data-safe rename, system-column collisions, idempotency, `down()`). Do not hand-wave this — the ordering and collision rules there prevent both boot failures and silent data loss.
 
-### 6d — Verify
+### 7d — Verify
 
 1. For major upgrades, note that Strapi's built-in data migrations run automatically on first startup in the new major — the upgrade tool does **not** migrate data itself, and any custom migration in `./database/migrations/` also runs then.
-2. Verify: reinstall if needed, rebuild the admin, and start the app to confirm it boots cleanly.
+2. **If Node was switched in Step 4, do a clean reinstall now** — after the tool has rewritten `package.json` to the target, not before: `rm -rf node_modules && install`. Native modules (`better-sqlite3`, `sharp`, …) are compiled against a specific Node ABI; a stale build left over from the old Node is the most common "changed Node and it won't boot" failure and is easily misread as an upgrade bug.
+3. Verify: reinstall if needed, rebuild the admin, and start the app to confirm it boots cleanly.
