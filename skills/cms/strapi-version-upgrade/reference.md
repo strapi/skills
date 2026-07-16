@@ -7,6 +7,7 @@ When a Strapi major upgrade introduces a reserved/system name that collides with
 ## Placement & mechanics
 
 - Put migration files in `./database/migrations/`. Strapi auto-runs any `.js` file there on startup, in **filename order** — so timestamp-prefix the name so it sorts correctly, e.g. `2026.07.15T00.00.00.rename-reserved-attribute.js`.
+- TypeScript projects: `.js` migrations in `./database/migrations/` work with the default (no config). Only set `database.settings.useTypescriptMigrations: true` if you author migrations as `.ts` files and want Strapi to load the compiled output from `dist/`.
 - Export `async up(knex)` and `async down(knex)`. Strapi passes a raw **Knex** instance: use `knex.schema` for DDL and `knex('table')` for data.
 - Completed runs are recorded in the `strapi_migrations` table **by filename**. Strapi skips any filename already listed there — it does **not** diff file contents. Never edit a migration after it has run on an environment; add a new one.
 
