@@ -12,6 +12,7 @@ These skills are distributed through the [open agent skills ecosystem](https://w
 | ----- | ----------- |
 | [`strapi-docs-mcp`](./skills/cms/strapi-docs-mcp) | Query the official Strapi documentation through the `strapi-docs` MCP server (powered by Kapa). Use for any Strapi question — API syntax, configuration, features, plugins, upgrades, CLI. |
 | [`strapi-mcp-capabilities`](./skills/cms/strapi-mcp-capabilities) | Create custom MCP capabilities (tools, prompts, resources) in a Strapi 5 plugin via the `strapi.ai.mcp` service. |
+| [`strapi-version-upgrade`](./skills/cms/strapi-version-upgrade) | Upgrade a Strapi application to a new version. Always reviews the relevant breaking changes first, then performs the upgrade using the official `@strapi/upgrade` tool. |
 
 More skills will be added over time. Browse the [`skills/`](./skills) directory for the full list.
 
