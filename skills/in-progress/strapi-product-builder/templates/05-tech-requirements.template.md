@@ -10,13 +10,13 @@
 |-------|------|-------|
 | title | string | required, max 120 |
 | slug | uid (target: title) | unique |
-| body | richtext (blocks) | |
+| body | blocks | modern rich-text editor (its own type; use legacy `richtext` only if you want Markdown) |
 | cover | media (single, images) | |
 | author | relation: manyToOne -> api::author.author | |
 
 - Draft & publish: yes/no
 - Localized: yes/no (fields: ...)
-- Lifecycle hooks: ...
+- Server-set / derived fields: ... (which layer handles each — see Lifecycles / policies / middlewares below)
 
 (Repeat per content type.)
 
@@ -84,7 +84,9 @@
 - **Custom role `editor`**: ...
 
 ## Lifecycles / policies / middlewares
-- `api::article.article` `beforeCreate`: generate slug if missing
+> Pick the layer by context (see `references/strapi-build-cookbook.md`): request/auth-aware logic → **controller**; document-level logic without the request → **Document Service middleware** (`strapi.documents.use()` in `register()`). Avoid lifecycle hooks for business logic in v5 — no request context, and they fire twice on publish.
+- Document Service middleware: generate `slug` for `api::article.article` if missing (uid fields are NOT auto-filled on API/seed writes)
+- Controller `api::article.article` `create`: stamp `author` from `ctx.state.user` via the Document Service
 - Policy `is-owner` applied to `PUT /api/articles/:documentId`
 - Middleware `api::article.populate-article` applied to `GET /api/articles*`
 

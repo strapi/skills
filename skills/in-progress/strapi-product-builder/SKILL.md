@@ -1,11 +1,11 @@
 ---
 name: strapi-product-builder
-description: Run a structured, business-value-first product-planning interview that turns a fuzzy idea into a build-ready spec — BEFORE any code is written. Use this the moment someone is still figuring out WHAT to build and says things like "I have an idea for an app, help me think it through", "help me plan/scope/design my product", "where do I start?", "let's spec this out before I write code", or "turn this into a PRD". Covers any new app, site, SaaS, MVP, marketplace, or feature. Trigger on the planning intent alone — the user need NOT mention Strapi, a CMS, or any tech; a Strapi v5 + Strapi Cloud backend (overridable, with your choice of frontend and auth) is assumed by default. It nails value, users, and requirements before any tech decision, then produces six markdown files ending in a Claude Code build spec. Do NOT use once a spec or project exists and the user wants to scaffold, configure, migrate, add pages, wire auth, or debug — those are build tasks, not idea-stage planning.
+description: Run a structured, business-value-first product-planning interview that turns a fuzzy idea into a build-ready spec — BEFORE any code is written. Use this the moment someone is still figuring out WHAT to build and says things like "I have an idea for an app, help me think it through", "help me plan/scope/design my product", "where do I start?", "let's spec this out before I write code", or "turn this into a PRD". Covers any new app, site, SaaS, MVP, marketplace, or feature. Trigger on the planning intent alone — the user need NOT mention Strapi, a CMS, or any tech; a Strapi v5 + Strapi Cloud backend (overridable, with your choice of frontend and auth) is assumed by default. It nails value, users, and requirements before any tech decision, then produces six markdown files ending in a build spec you can hand to any coding agent (Claude Code, Cursor, etc.). Do NOT use once a spec or project exists and the user wants to scaffold, configure, migrate, add pages, wire auth, or debug — those are build tasks, not idea-stage planning.
 ---
 
 # Strapi Product Builder
 
-A structured, interview-driven process that turns a product idea into a build-ready spec for a **Strapi-backed project**. The output is six markdown files in a project folder — the last one is detailed enough that Claude Code can start building the POC immediately, with Strapi content types, API routes, and seed data scaffolded.
+A structured, interview-driven process that turns a product idea into a build-ready spec for a **Strapi-backed project**. The output is six markdown files in a project folder — the last one is detailed enough that any coding agent (Claude Code, Cursor, etc.) can start building the POC immediately, with Strapi content types, API routes, and seed data scaffolded.
 
 ## Core philosophy
 
@@ -27,7 +27,7 @@ Before recommending Strapi APIs, plugin patterns, content-type configuration, or
 2. **Official documentation** — fall back to https://docs.strapi.io (v5 is the current major version). Use `WebFetch` to pull the specific page when an MCP isn't available.
 3. **This skill's own `references/`** — for build-sensitive specifics consult `references/strapi-build-cookbook.md` (the non-obvious Strapi v5 traps) and the other reference files, then fall back to the official docs. This skill is **self-contained**: it references only official Strapi sources (docs, official blog posts, official starters such as `strapi/LaunchPad`) and never depends on any other skill being installed. The stage-6 spec must always stand on its own — buildable from it + the official docs.
 
-**When to cite the docs in the output files**: whenever stage 5 or 6 references a non-obvious Strapi feature (lifecycles, components vs. dynamic zones, draft & publish, i18n, RBAC, custom fields, document service queries), include a link to the relevant docs page so the future Claude Code build session can verify the API surface before generating code. Curated, capability-tagged sources (official docs, Strapi blog tutorials, reference repos) live in **`references/resources.md`** — cite the matching entry, and re-verify any blog tutorial's exact commands/versions against current docs first (tutorials drift).
+**When to cite the docs in the output files**: whenever stage 5 or 6 references a non-obvious Strapi feature (lifecycles, components vs. dynamic zones, draft & publish, i18n, RBAC, custom fields, document service queries), include a link to the relevant docs page so the future build session (whatever coding agent runs it) can verify the API surface before generating code. Curated, capability-tagged sources (official docs, Strapi blog tutorials, reference repos) live in **`references/resources.md`** — cite the matching entry, and re-verify any blog tutorial's exact commands/versions against current docs first (tutorials drift).
 
 If neither the MCP nor docs are reachable for a specific question, say so explicitly in the file ("Verify against docs.strapi.io before implementing") rather than guessing.
 
@@ -54,7 +54,7 @@ strapi-product-builder/
 │   ├── 03-requirements.template.md
 │   ├── 04-tech-decisions.template.md
 │   ├── 05-tech-requirements.template.md
-│   └── 06-claude-code-spec.template.md
+│   └── 06-build-spec.template.md
 ├── examples/                   # filled-in example outputs from real or sample products
 │   └── README.md
 └── scripts/                    # optional helpers (e.g., scaffold the six output files)
@@ -85,9 +85,9 @@ This skill is designed to run in **any** Claude surface. Detect what's available
 | **Claude Desktop** with filesystem MCP | A filesystem MCP server is connected (e.g., `mcp__filesystem__*`) | Write files via the MCP into a user-chosen folder. Ask the user to confirm the path the first time. |
 | **Claude Desktop** without filesystem MCP, or **claude.ai web** | Only `artifacts` / `present_files` / inline display | Produce each stage's content as an **artifact** (`text/markdown`) the user can open, edit, copy, or download. Tell the user how to save them locally. Six artifacts total — one per stage. |
 
-**Stage-6 spec rendering** — regardless of surface, the final `06-claude-code-spec.md` must be self-contained enough that the user can paste it into a fresh Claude Code session and build straight from it + the official Strapi docs.
+**Stage-6 spec rendering** — regardless of surface, the final `06-build-spec.md` must be self-contained enough that the user can paste it into a fresh session of any coding agent (Claude Code, Cursor, etc.) and build straight from it + the official Strapi docs.
 
-**Self-contained build spec** — the spec never depends on any other skill being installed. Describe each build step concretely (commands, schemas, config) so any future Claude Code session can execute it from the spec + the official Strapi docs alone.
+**Self-contained build spec** — the spec never depends on any other skill being installed. Describe each build step concretely (commands, schemas, config) so any future coding-agent session can execute it from the spec + the official Strapi docs alone.
 
 **Strapi docs lookup** works on all surfaces:
 - `strapi-docs` MCP if connected (Desktop + Code both support MCP)
@@ -106,7 +106,7 @@ Each stage has a fixed filename in the project folder. Run them in order by defa
 | 3 | `03-requirements.md` | Functional requirements derived from stages 1 & 2 |
 | 4 | `04-tech-decisions.md` | Tech stack discussion, driven by requirements |
 | 5 | `05-tech-requirements.md` | Detailed technical spec — data models, APIs, components |
-| 6 | `06-claude-code-spec.md` | Build-ready markdown that Claude Code can act on |
+| 6 | `06-build-spec.md` | Build-ready markdown any coding agent can act on |
 
 After each stage, write or render the file (using the output mode chosen above), show the user a summary of what you captured, and ask: *"Does this look right? Anything to revise before we move to stage [next]?"*
 
@@ -291,11 +291,11 @@ When you're unsure how a Strapi feature works (lifecycle hooks, dynamic zone que
 
 ---
 
-## Stage 6 — Claude Code build spec
+## Stage 6 — Build spec
 
-**Goal**: Produce a single markdown file (`06-claude-code-spec.md`) that Claude Code can read and immediately start building a Strapi v5 POC with the **frontend chosen in stage 4**. This file is the synthesis of stages 1-5, reformatted for an AI coding agent.
+**Goal**: Produce a single markdown file (`06-build-spec.md`) that any coding agent (Claude Code, Cursor, etc.) can read and immediately start building a Strapi v5 POC with the **frontend chosen in stage 4**. This file is the synthesis of stages 1-5, reformatted for an AI coding agent.
 
-This file should be **self-contained** — Claude Code shouldn't need to read the other five files to know what to build. Reference them as background, but include everything Claude Code needs to act.
+This file should be **self-contained** — the build agent shouldn't need to read the other five files to know what to build. Reference them as background, but include everything the agent needs to act.
 
 **Up-front instructions to bake into the spec for the build session**:
 - Use the **strapi-docs MCP** (if installed) for any Strapi API question; otherwise `WebFetch` https://docs.strapi.io.
@@ -309,7 +309,7 @@ This file should be **self-contained** — Claude Code shouldn't need to read th
 2. **Stack** — confirmed choices from stage 4 (Strapi v5, Postgres, Strapi Cloud, the **chosen frontend framework**, the **chosen auth approach**, plus the rest)
 3. **Repo layout** — typical: monorepo or two folders (`apps/cms` Strapi + `apps/web` frontend), or two separate repos
 4. **Setup commands** — concrete commands for both the backend and frontend. Use the **chosen framework's** scaffold command (see `references/frontend-frameworks.md`)
-5. **Build order (milestones)** — discrete chunks Claude Code can tackle one at a time. Each milestone has a clear "done when…" criterion. Default milestone shape:
+5. **Build order (milestones)** — discrete chunks the build agent can tackle one at a time. Each milestone has a clear "done when…" criterion. Default milestone shape:
    - **M1 — Strapi scaffold + Postgres + Strapi Cloud project linked**
    - **M2 — Content types, components, dynamic zones, draft/publish, i18n, permissions**
    - **M3 — Auth**: Better Auth path → install the 3 plugins, remove U&P, configure providers (follow the official tutorial in `references/auth-better-auth.md`); or stock U&P path → configure Public/Authenticated roles
@@ -330,7 +330,7 @@ This file should be **self-contained** — Claude Code shouldn't need to read th
 12. **Acceptance criteria for the POC** — drawn from the core loop in stage 2. The POC is done when the loop works end-to-end against the deployed Strapi Cloud backend.
 13. **Open questions / parked items** — anything the user deferred
 
-**File template**: write `06-claude-code-spec.md` from `templates/06-claude-code-spec.template.md` (the source of truth). It contains the full self-contained build spec: project overview, stack, repo layout, setup commands, the M1-M8 milestones, schemas, API surface, auth, frontend route tree, env vars, deployment, and acceptance criteria. Fill the framework-specific and auth-specific parts from the stage-4 choices — the template uses a worked example per framework; don't paste the wrong one.
+**File template**: write `06-build-spec.md` from `templates/06-build-spec.template.md` (the source of truth). It contains the full self-contained build spec: project overview, stack, repo layout, setup commands, the M1-M8 milestones, schemas, API surface, auth, frontend route tree, env vars, deployment, and acceptance criteria. Fill the framework-specific and auth-specific parts from the stage-4 choices — the template uses a worked example per framework; don't paste the wrong one.
 
 Two correctness reminders when filling it in (these are easy to get wrong):
 - **Strapi scaffold**: TypeScript is the default and `--quickstart` is **deprecated** and conflicts with `--dbclient` — don't use it. For an automated build use `npx create-strapi-app@latest apps/cms --non-interactive --skip-cloud --dbclient=postgres --dbhost=... --dbport=... --dbname=... --dbusername=... --dbpassword=...` (without `--non-interactive` + the `--db*` flags the CLI prompts).

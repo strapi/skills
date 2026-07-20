@@ -1,4 +1,6 @@
-# [Product Name] — Claude Code Build Spec
+# [Product Name] — Build Spec
+
+> Hand this file to any coding agent (Claude Code, Cursor, etc.) — it is self-contained.
 
 > **Build target**: Strapi v5 (deployed to Strapi Cloud) + [chosen frontend] frontend.
 > **Docs lookup**: query the `strapi-docs` MCP first; otherwise WebFetch https://docs.strapi.io.
@@ -68,7 +70,7 @@ cd apps/web && npm install @tanstack/react-query   # + better-auth if using Bett
 - [ ] Enable in `config/plugins.ts`: `'better-auth'`, `'better-auth-dashboard'`, `'api-permissions'` all `{ enabled: true }`
 - [ ] Create **`src/lib/auth.ts`** exporting the betterAuth **instance** (`export const auth = betterAuth({ database: strapiAdapter(), advanced: { database: { generateId: 'serial' } }, ... })`) — runtime auto-discovers this file; do NOT use a `() => betterAuth(...)` factory
 - [ ] `npx @better-auth/cli generate --config src/lib/auth.ts --yes` to create the `user`/`session`/`account`/`verification` content types (api-permissions needs the `user` type)
-- [ ] Set `BETTER_AUTH_SECRET`, `STRAPI_URL` (backend), `CLIENT_URL` (frontend → `trustedOrigins`)
+- [ ] Set `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` (public Strapi URL → `baseURL`), `CLIENT_URL` (frontend → `trustedOrigins`)
 - [ ] Requires Strapi ≥ 5.45; boot and verify `/api/auth/*` mounts (expect to debug — this is a beta/alpha stack)
 **Stock U&P path:**
 - [ ] Configure Public/Authenticated role permissions per content type

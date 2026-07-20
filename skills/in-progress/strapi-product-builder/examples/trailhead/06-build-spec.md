@@ -1,4 +1,4 @@
-# Trailhead — Claude Code Build Spec
+# Trailhead — Build Spec
 
 > **Build target**: Strapi v5 (deployed to Strapi Cloud) + Next.js (App Router) frontend.
 > **Docs lookup**: query the `strapi-docs` MCP first; otherwise WebFetch https://docs.strapi.io.
@@ -61,7 +61,7 @@ cd apps/web && npm install better-auth @tanstack/react-query
 - [ ] Enable `better-auth`, `better-auth-dashboard`, `api-permissions` in `config/plugins.ts`
 - [ ] Create `src/lib/auth.ts` exporting the betterAuth **instance** with `strapiAdapter()` + **`advanced.database.generateId: 'serial'`** (runtime auto-discovers this file; not a factory)
 - [ ] `npx @better-auth/cli generate --config src/lib/auth.ts --yes` (creates user/session/account/verification content types)
-- [ ] email/password + Google; set `BETTER_AUTH_SECRET`, `STRAPI_URL`, `CLIENT_URL` (→ trustedOrigins), Google creds
+- [ ] email/password + Google; set `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `CLIENT_URL` (→ trustedOrigins), Google creds
 - [ ] Configure `plugin-api-permissions` (alpha): anonymous read on trail/region/report + media; authenticated create on report
 - [ ] Requires Strapi ≥ 5.45; boot + verify `/api/auth/*` mounts (expect to debug — beta/alpha stack)
 **Done when**: a user can sign up (email + Google), sign in, and sign out from the Next.js app.

@@ -4,7 +4,7 @@
 
 A Claude skill that turns a fuzzy product idea into a build-ready spec for a **Strapi v5 + Strapi Cloud** project — with the frontend of your choice (first-class support for Next.js, TanStack Start, Astro, and Vue/Nuxt) — through a six-stage interview.
 
-The output is six markdown files (`01-product.md` through `06-claude-code-spec.md`) — the last one is detailed enough that a fresh Claude Code session can start building the POC immediately.
+The output is six markdown files (`01-product.md` through `06-build-spec.md`) — the last one is detailed enough that a fresh session of any coding agent (Claude Code, Cursor, etc.) can start building the POC immediately.
 
 ---
 
@@ -36,7 +36,7 @@ strapi-product-builder/
 
 ## Install
 
-This skill works in **Claude Code**, **Claude Desktop**, and **claude.ai web**. Pick the install path for your surface — the skill content itself is identical across all three.
+This skill works in **Claude Code**, **Claude Desktop**, **claude.ai web**, and other agents that support the [Agent Skills](https://agentskills.io/specification.md) format (e.g. **Cursor**). Pick the install path for your surface — the skill content itself is identical everywhere.
 
 ### Claude Code (recommended for the full experience)
 
@@ -62,11 +62,37 @@ Then start a new Claude Code session — the skill will be auto-discovered. Veri
 
 > Why Claude Code is best: filesystem writes, MCP support, and you can build straight from the stage-6 spec in the same session.
 
+### Cursor / other coding agents
+
+The skill folder is plain markdown, so any agent that reads the [Agent Skills](https://agentskills.io/specification.md) layout can use it.
+
+Cursor personal install (available in every project on this machine):
+
+```bash
+# from the repo root (the cloned `skills` folder)
+mkdir -p ~/.cursor/skills
+cp -R skills/in-progress/strapi-product-builder ~/.cursor/skills/
+```
+
+Project install (works across agents — Cursor also reads its project-level `.cursor/skills/`):
+
+```bash
+# from the repo root (the cloned `skills` folder)
+mkdir -p /path/to/your/project/.agents/skills
+cp -R skills/in-progress/strapi-product-builder /path/to/your/project/.agents/skills/
+# Cursor-only alternative: copy into /path/to/your/project/.cursor/skills/ instead
+```
+
+Then start a new session and reference the skill by name (e.g. "use the strapi-product-builder skill"). If your agent doesn't auto-discover skills, point it at the folder's `SKILL.md` directly.
+
 ### Claude Desktop
 
 Claude Desktop installs skills from a **zip**. Create one from your clone:
 
 ```bash
+# run from the REPO ROOT — the top-level folder `git clone` created. (If you
+# already ran `git clone … && cd skills` above, you're at the repo root now;
+# the `skills/in-progress` below is the subfolder inside the repo.)
 cd skills/in-progress
 zip -r strapi-product-builder.zip strapi-product-builder
 ```
@@ -126,11 +152,11 @@ The skill runs as a **structured interview** — six stages, one at a time:
 | 3 | Functional requirements (capability-level, not tech) | `03-requirements.md` |
 | 4 | Tech decisions (Strapi backend default; you pick the frontend + auth) | `04-tech-decisions.md` |
 | 5 | Strapi schemas, API surface, auth flows, route tree | `05-tech-requirements.md` |
-| 6 | Build-ready Claude Code spec with milestones | `06-claude-code-spec.md` |
+| 6 | Build-ready spec with milestones — hand to any coding agent | `06-build-spec.md` |
 
 You can jump back and revise any earlier stage at any time — the skill will ask whether downstream files need to be updated.
 
-**The output** is a project folder with those six `.md` files (in Claude Code/Desktop) or six copyable artifacts (claude.ai web). `06-claude-code-spec.md` is the deliverable — a self-contained build spec (stack, repo layout, setup commands, milestones, schemas, API surface, auth, env vars, deployment) you hand to a fresh Claude Code session to actually build the project.
+**The output** is a project folder with those six `.md` files (in Claude Code/Desktop) or six copyable artifacts (claude.ai web). `06-build-spec.md` is the deliverable — a self-contained build spec (stack, repo layout, setup commands, milestones, schemas, API surface, auth, env vars, deployment) you hand to any coding agent (a fresh Claude Code session, Cursor, etc.) to actually build the project.
 
 > **See real output first:** [`examples/trailhead/`](examples/trailhead/) is a complete worked example — all six files for a sample product.
 
@@ -140,7 +166,7 @@ You can jump back and revise any earlier stage at any time — the skill will as
 - **Pick your frontend in stage 4.** The skill asks; Next.js, TanStack Start, Astro, and Vue/Nuxt are first-class, but any framework works.
 - **Auth is a real choice.** The Better Auth plugin is modern but currently beta (not for production per its maintainers); pick stock Users & Permissions if you're launching soon.
 - **Bring real constraints.** Compliance, region, team skills, budget — surface them in stage 1-3 so they shape the spec.
-- **Use the spec to start a new Claude Code session.** Stage 6 is self-contained — open Claude Code in a fresh repo, paste it, and start with milestone 1.
+- **Use the spec to start a new build session.** Stage 6 is self-contained — open your coding agent (Claude Code, Cursor, …) in a fresh repo, paste it, and start with milestone 1.
 
 ### After the spec is done
 
@@ -149,12 +175,12 @@ The stage-6 spec is **self-contained** — build straight from it with nothing e
 In **Claude Code**:
 
 ```
-> build from @06-claude-code-spec.md
+> build from @06-build-spec.md
 ```
 
-Claude works through the milestones (M1–M8), consulting the official Strapi docs (or the `strapi-docs` MCP) as it goes.
+The agent works through the milestones (M1–M8), consulting the official Strapi docs (or the `strapi-docs` MCP) as it goes.
 
-In **Desktop** or **web**: copy `06-claude-code-spec.md` and paste it as the first message in a Claude Code session.
+In **Desktop** or **web**: copy `06-build-spec.md` and paste it as the first message in a session of your coding agent (Claude Code, Cursor, etc.).
 
 ---
 
@@ -184,7 +210,7 @@ After editing, re-upload (Desktop / web) or just save in place (Claude Code — 
 - **Skill doesn't trigger** → ensure it's enabled in Settings → Capabilities → Skills, or call it by name.
 - **Strapi docs lookups fail** → install a Strapi docs MCP, or rely on `WebFetch` against `https://docs.strapi.io` (works on every surface).
 - **`create-strapi-app` flags don't match** in a new session → Strapi's CLI changes; let Claude check the current docs before running the install commands in the spec.
-- **Better Auth callback errors after deploy** → `STRAPI_URL` (used as the Better Auth `baseURL`) must equal the deployed Strapi Cloud URL exactly, and provider redirect URIs (`<STRAPI_URL>/api/auth/callback/<provider>`) must be updated to match.
+- **Better Auth callback errors after deploy** → `BETTER_AUTH_URL` (used as the Better Auth `baseURL`) must equal the deployed Strapi Cloud URL exactly, and provider redirect URIs (`<BETTER_AUTH_URL>/api/auth/callback/<provider>`) must be updated to match.
 
 ---
 

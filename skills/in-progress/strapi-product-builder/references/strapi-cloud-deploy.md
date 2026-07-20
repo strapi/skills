@@ -29,7 +29,7 @@ This is the default deployment target for any project produced by this skill. Us
 6. Set **environment variables** — at minimum:
    - `BETTER_AUTH_SECRET` (generate with `openssl rand -base64 32`)
    - `BETTER_AUTH_DASHBOARD_SECRET` (generate with `openssl rand -base64 32`)
-   - `STRAPI_URL` (the Strapi Cloud public URL — set after first deploy)
+   - `BETTER_AUTH_URL` (the Strapi Cloud public URL, used as the Better Auth `baseURL` — set after first deploy)
    - `CLIENT_URL` (the frontend public URL)
    - Any provider keys (e.g., `GOOGLE_CLIENT_ID`, `STRIPE_SECRET_KEY`)
    - Strapi Cloud auto-injects: `DATABASE_URL`, `APP_KEYS`, `JWT_SECRET`, `ADMIN_JWT_SECRET`, `API_TOKEN_SALT`, `TRANSFER_TOKEN_SALT`, `HOST`, `PORT`
@@ -48,7 +48,7 @@ This is the default deployment target for any project produced by this skill. Us
 
 - **First deploy 500s on `/admin`** — usually `APP_KEYS` length mismatch. Strapi Cloud handles this for you, but if you copied a `.env` from local, clear those vars from the Cloud env settings so Cloud's auto-generated values win.
 - **Media URLs return 403** — make sure `Public` role has read permission on the upload plugin's `find` action.
-- **Better Auth callback URL mismatch** — `STRAPI_URL` (used as `baseURL` in `src/lib/auth.ts`) must equal the Strapi Cloud public URL exactly (including `https://`, no trailing slash). Update OAuth provider redirect URIs to `<STRAPI_URL>/api/auth/callback/<provider>`.
+- **Better Auth callback URL mismatch** — `BETTER_AUTH_URL` (used as `baseURL` in `src/lib/auth.ts`) must equal the Strapi Cloud public URL exactly (including `https://`, no trailing slash). Update OAuth provider redirect URIs to `<BETTER_AUTH_URL>/api/auth/callback/<provider>`.
 - **CORS** — set `config/middlewares.ts` `strapi::cors` `origin` to your frontend host(s). Don't use `*` in production.
 
 ## When NOT to use Strapi Cloud

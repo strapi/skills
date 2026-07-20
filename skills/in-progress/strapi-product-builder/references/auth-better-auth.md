@@ -77,7 +77,7 @@ import { strapiAdapter } from '@strapi-community/plugin-better-auth'
 export const auth = betterAuth({          // export the INSTANCE
   database: strapiAdapter(),
   secret: process.env.BETTER_AUTH_SECRET,
-  baseURL: process.env.STRAPI_URL ?? 'http://localhost:1337',
+  baseURL: process.env.BETTER_AUTH_URL ?? 'http://localhost:1337',
   trustedOrigins: [process.env.CLIENT_URL ?? 'http://localhost:3000'],
   emailAndPassword: { enabled: true },
   socialProviders: {
@@ -139,7 +139,7 @@ The standard client setup (`createAuthClient`, `useSession`, `signIn.email`/`sig
 Better Auth manages its own `user` and `session` tables. To attach Strapi-side data (profile, preferences, owned content):
 
 - Create a Strapi collection type `Profile` with a one-to-one relation to the Better Auth `user.id`.
-- Use a Strapi lifecycle on `Profile.beforeCreate` to validate the linked user exists.
+- Validate the linked user exists at the layer that creates the Profile — the custom controller (has the request/session context) or a Document Service middleware — per the layering guidance in `strapi-build-cookbook.md`. (Don't reach for a `beforeCreate` lifecycle hook: no request context, fires twice on publish.)
 - Or: extend the Better Auth user schema directly via the plugin's user fields config (check README — supported fields vary by plugin version).
 
 ## Permissions (Better Auth path — NOT the stock U&P role model)

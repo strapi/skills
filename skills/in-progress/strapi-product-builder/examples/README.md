@@ -16,7 +16,7 @@ examples/
 │   ├── 03-requirements.md
 │   ├── 04-tech-decisions.md
 │   ├── 05-tech-requirements.md
-│   └── 06-claude-code-spec.md
+│   └── 06-build-spec.md
 └── README.md (this file)
 ```
 
@@ -25,7 +25,7 @@ examples/
 - A real or convincingly-real product idea, end-to-end through all six stages
 - Concrete content types, components, and dynamic zones — not placeholders
 - A sample Strapi schema in stage 5 that compiles
-- A stage-6 spec that another Claude session could actually act on without follow-up questions
+- A stage-6 spec that any coding-agent session could actually act on without follow-up questions
 
 ## Anti-patterns to avoid in examples
 
