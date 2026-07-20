@@ -26,16 +26,17 @@ This is the default deployment target for any project produced by this skill. Us
 3. Set the **root directory** if Strapi lives in a subfolder of a monorepo (e.g., `apps/cms`).
 4. Choose a **region** close to your primary users.
 5. Pick a **plan** (free tier is fine for POCs; paid tiers add custom domains, more resources, backups).
-6. Set **environment variables** — at minimum:
-   - `BETTER_AUTH_SECRET` (generate with `openssl rand -base64 32`)
-   - `BETTER_AUTH_DASHBOARD_SECRET` (generate with `openssl rand -base64 32`)
-   - `BETTER_AUTH_URL` (the Strapi Cloud public URL, used as the Better Auth `baseURL` — set after first deploy)
-   - `CLIENT_URL` (the frontend public URL)
-   - Any provider keys (e.g., `GOOGLE_CLIENT_ID`, `STRIPE_SECRET_KEY`)
+6. Set **environment variables** — gate on the stage-4 auth choice:
    - Strapi Cloud auto-injects: `DATABASE_URL`, `APP_KEYS`, `JWT_SECRET`, `ADMIN_JWT_SECRET`, `API_TOKEN_SALT`, `TRANSFER_TOKEN_SALT`, `HOST`, `PORT`
+   - Any provider keys (e.g., `GOOGLE_CLIENT_ID`, `STRIPE_SECRET_KEY`)
+   - **Better Auth path only** (skip all of these on stock Users & Permissions — U&P needs no extra auth vars beyond the auto-injected `JWT_SECRET`):
+     - `BETTER_AUTH_SECRET` (generate with `openssl rand -base64 32`)
+     - `BETTER_AUTH_DASHBOARD_SECRET` (generate with `openssl rand -base64 32`)
+     - `BETTER_AUTH_URL` (the Strapi Cloud public URL, used as the Better Auth `baseURL` — set after first deploy)
+     - `CLIENT_URL` (the frontend public URL → `trustedOrigins`)
 7. **Deploy**. First deploy takes a few minutes (build + migrations).
 8. Open the admin URL (`https://<project>.strapiapp.com/admin`) and create the first admin user.
-9. Configure permissions for the `Public` and `Authenticated` roles per the stage-5 spec.
+9. Configure content-API permissions per the stage-5 spec — `Public`/`Authenticated` roles under Users & Permissions on the stock path, or Settings → API Permissions (`plugin-api-permissions`) on the Better Auth path.
 10. Generate API tokens (Settings → API Tokens) for any frontend that needs read access.
 
 ## Updating after first deploy
@@ -48,7 +49,7 @@ This is the default deployment target for any project produced by this skill. Us
 
 - **First deploy 500s on `/admin`** — usually `APP_KEYS` length mismatch. Strapi Cloud handles this for you, but if you copied a `.env` from local, clear those vars from the Cloud env settings so Cloud's auto-generated values win.
 - **Media URLs return 403** — make sure `Public` role has read permission on the upload plugin's `find` action.
-- **Better Auth callback URL mismatch** — `BETTER_AUTH_URL` (used as `baseURL` in `src/lib/auth.ts`) must equal the Strapi Cloud public URL exactly (including `https://`, no trailing slash). Update OAuth provider redirect URIs to `<BETTER_AUTH_URL>/api/auth/callback/<provider>`.
+- **Better Auth callback URL mismatch** (Better Auth path only) — `BETTER_AUTH_URL` (used as `baseURL` in `src/lib/auth.ts`) must equal the Strapi Cloud public URL exactly (including `https://`, no trailing slash). Update OAuth provider redirect URIs to `<BETTER_AUTH_URL>/api/auth/callback/<provider>`.
 - **CORS** — set `config/middlewares.ts` `strapi::cors` `origin` to your frontend host(s). Don't use `*` in production.
 
 ## When NOT to use Strapi Cloud

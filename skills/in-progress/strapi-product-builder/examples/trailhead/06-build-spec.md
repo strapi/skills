@@ -120,7 +120,7 @@ apps/web/app/
 ### Next.js (apps/web)
 - `NEXT_PUBLIC_STRAPI_URL` — public Strapi URL (browser-safe)
 - `STRAPI_API_TOKEN` — server-only read token; **no `NEXT_PUBLIC_` prefix** (would leak to the client bundle)
-- `BETTER_AUTH_URL` — same as backend
+- `NEXT_PUBLIC_AUTH_BASE_URL` — Better Auth client `baseURL` = Strapi origin + `/api/auth` (backend `BETTER_AUTH_URL` stays the bare origin)
 
 ## Deployment
 - **Backend → Strapi Cloud**: https://cloud.strapi.io → connect repo (root `apps/cms`) → set env vars → deploy on push. See https://docs.strapi.io/cloud/getting-started/intro.

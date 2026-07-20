@@ -1,6 +1,6 @@
 # Auth — Better Auth via the strapi-community plugin
 
-Default auth approach for any project this skill produces. Reference when filling in stage 5 (auth flows, permissions) and stage 6 (M3 milestone).
+**Opt-in** auth approach — the skill's stage-4 default is stock **Users & Permissions**; choose this path when the user wants social login/2FA/passkeys and accepts POC risk. Reference when filling in stage 5 (auth flows, permissions) and stage 6 (M3 milestone).
 
 - Plugin repo: https://github.com/strapi-community/plugin-better-auth
 - Plugin docs: https://strapi-community.github.io/plugin-better-auth/
@@ -8,7 +8,7 @@ Default auth approach for any project this skill produces. Reference when fillin
 - Strapi Users & Permissions docs (for the underlying role model): https://docs.strapi.io/cms/features/users-permissions
 - Official Strapi Better Auth tutorial: https://strapi.io/blog/strapi-better-auth-tutorial-setup-guide-for-strapi-v5-and-next-js-16
 
-> ⚠️ **BETA — confirm with the user before defaulting to this.** The maintainers state the plugin is in **beta** and **"should not be used in production"**, with Strapi v5 support marked *experimental*. It's an excellent choice for prototypes/POCs and when you want social login, 2FA, magic links, or passkeys without hand-rolling them. For a production launch on a tight timeline, stock **Users & Permissions** (below) is the conservative fallback. Always state the beta status in stage 4 and get an explicit yes before writing it into the spec.
+> ⚠️ **BETA — opt-in only, never the default.** The maintainers state the plugin is in **beta** and **"should not be used in production"**, with Strapi v5 support marked *experimental*. The skill's stage-4 default is stock **Users & Permissions**; offer this plugin when the user wants social login, 2FA, magic links, or passkeys without hand-rolling them and accepts POC risk. Always state the beta status in stage 4 and get an explicit yes before writing it into the spec.
 
 > Plugin APIs and config keys evolve. Always check the plugin docs/README before pasting install commands or config snippets into a build spec.
 

@@ -27,7 +27,7 @@ When you write stages 5 and 6, **parameterize these by the chosen framework** in
    - Astro → `PUBLIC_STRAPI_URL`
    - Nuxt → `NUXT_PUBLIC_STRAPI_URL`
    - **A server-only secret (e.g. a Strapi API token used in SSR loaders) must NOT carry the public prefix.** Name it `STRAPI_API_TOKEN` (no prefix) so it stays server-side. A `VITE_`/`NEXT_PUBLIC_`-prefixed token is bundled into client JS and leaks to every visitor.
-4. **Auth client wiring** — `better-auth` ships framework clients (`better-auth/react` for Next.js/TanStack/plain React, `better-auth/vue` for Vue/Nuxt). The `baseURL` points at the Strapi backend origin (Better Auth mounts under `/api/auth`). See `auth-better-auth.md`.
+4. **Auth client wiring** — `better-auth` ships framework clients (`better-auth/react` for Next.js/TanStack/plain React, `better-auth/vue` for Vue/Nuxt). The client `baseURL` is the **Strapi origin + `/api/auth`** (e.g. `https://my-app.strapiapp.com/api/auth`), read from a public-prefixed env var — a bare origin is the most common "client can't reach auth" bug. (The backend's `BETTER_AUTH_URL` is the bare origin; only the client value carries the suffix.) See `auth-better-auth.md`.
 
 ## Data fetching pattern per framework (high level)
 

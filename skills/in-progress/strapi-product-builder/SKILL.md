@@ -47,7 +47,7 @@ strapi-product-builder/
 │   ├── docs-lookup.md          # how to use the strapi-docs MCP and docs.strapi.io
 │   ├── strapi-build-cookbook.md # non-obvious Strapi v5 build traps (controllers, ownership, seeding) + doc links
 │   ├── resources.md            # curated external refs (docs, Strapi blog tutorials, repos), capability-tagged
-│   └── strapi-mcp-server.md    # built-in Strapi MCP server (v5.47+, beta) — optional product capability
+│   └── strapi-mcp-server.md    # built-in Strapi MCP server (v5.47+, GA since 5.49) — optional product capability
 ├── templates/                  # one .md per stage — the file templates the skill writes
 │   ├── 01-product.template.md
 │   ├── 02-users.template.md
@@ -187,7 +187,7 @@ Drive the requirements directly from stages 1 and 2. For each item in the user j
 - **Reusable content patterns** — note when the same shape repeats across entities (hero sections, SEO blocks, address) — these become Strapi *components*. Note when one slot needs to hold multiple shapes (page builder, flexible layout) — these become *dynamic zones*. Still capability-level only
 - **Localization & drafts** — does the product need multi-language content (Strapi i18n) or a draft/publish workflow? Capture as a yes/no requirement here
 - **Integrations needed** — third-party services the product must talk to (named at the capability level: "send email", "process payments")
-- **AI / agent access (MCP)** — does the product need AI agents or AI-powered features to read/write its content (assistants, copilots, content automation)? Strapi v5.47+ ships a built-in **MCP server** for exactly this. Capture as a yes/no capability here; the tech decision lands in stage 4. See `references/strapi-mcp-server.md`
+- **AI / agent access (MCP)** — does the product need AI agents or AI-powered features to read/write its content (assistants, copilots, content automation)? Strapi ships a built-in **MCP server** for exactly this (GA since v5.49). Capture as a yes/no capability here; the tech decision lands in stage 4. See `references/strapi-mcp-server.md`
 - **Non-functional requirements** — performance expectations, scale assumptions, security needs, compliance (GDPR, HIPAA, etc.)
 - **Out of scope (for MVP)** — explicit list of what the v1 will NOT do, to prevent scope creep
 
@@ -214,14 +214,14 @@ Drive the requirements directly from stages 1 and 2. For each item in the user j
 | Hosting (backend) | **Strapi Cloud** | Managed Strapi: zero infra, automated upgrades, built-in CDN/media, Postgres included. See `references/strapi-cloud-deploy.md` |
 | API style | **Strapi REST** with route middlewares for population (GraphQL plugin if the frontend needs it) | Matches Strapi's defaults |
 | Frontend | **User's choice — always ask** (first-class: Next.js, TanStack Start, Astro, Vue/Nuxt) | Strapi is headless; any frontend works. No silent default. See `references/frontend-frameworks.md` |
-| Auth | **strapi-community/plugin-better-auth** ⚠️ *beta — confirm first* | Brings Better Auth into Strapi — modern session/social/2FA. **Maintainers say beta, not for production**; needs Strapi ≥ 5.45 and removes Users & Permissions. Confirm in stage 4; else use stock U&P. See `references/auth-better-auth.md` |
+| Auth | **Stock Users & Permissions** (Better Auth plugin as opt-in) | U&P ships with Strapi, is production-ready, and matches the default Cloud-deploy path. The **`strapi-community/plugin-better-auth`** plugin (social/2FA/passkeys) is the *opt-in* upgrade — ⚠️ beta, not for production per its maintainers, needs Strapi ≥ 5.45, removes U&P. Offer it only when the user wants those features and accepts POC risk. See `references/auth-better-auth.md` |
 
 **Process**:
 
 1. State the defaults above and ask: *"Backend will be Strapi v5 deployed to Strapi Cloud unless you have a reason to choose otherwise. For the frontend — I support Next.js, TanStack Start, Astro, or Vue/Nuxt well (or another framework you prefer). Anything you already have in mind?"*
 2. **Frontend — always ask, never assume.** There is no silent default. Once chosen, that choice parameterizes stages 5-6 (scaffold command, route tree, env-var prefix, auth wiring) per `references/frontend-frameworks.md`.
-3. **Auth — confirm before defaulting to Better Auth.** The better-auth plugin is the preferred default *but it is beta and not recommended for production by its maintainers*, requires Strapi ≥ 5.45, and removes Users & Permissions. Say this plainly and ask: *"For auth I'd suggest the Better Auth plugin — it's modern (social, 2FA, passkeys) but currently beta, so not ideal if you're launching to production soon. The conservative choice is Strapi's built-in Users & Permissions. Which fits?"* Record the choice and its implications (the permissions model differs — see below).
-4. **MCP server — ask whether the product needs AI agents to manage its content.** If stage 3 flagged AI/agent read/write of content (assistant / copilot / automation over the CMS), ask plainly: *"Do you want to expose Strapi's built-in MCP server so AI agents can read and write your content? It's built into Strapi v5.47+ but currently **beta** — great for an internal or agent-driven tool, but hold off if you need a stable production surface right now."* **Off by default** — enable only on a clear yes. If enabled, bump the Strapi version floor to **≥ 5.47** and record the scoped-token plan. See `references/strapi-mcp-server.md`.
+3. **Auth — default to stock Users & Permissions; offer Better Auth as the opt-in.** U&P is built in and production-ready, which matches the default Strapi Cloud deploy target. Offer the Better Auth plugin only when the requirements call for social login, 2FA, magic links, or passkeys — and say its status plainly: *"For auth the default is Strapi's built-in Users & Permissions — production-ready and zero extra setup. If you want social login/2FA/passkeys there's the Better Auth plugin, but it's currently beta (its maintainers say not for production), so it's a fit for a POC, not a launch. Which fits?"* Record the choice and its implications (the permissions model differs — see below).
+4. **MCP server — ask whether the product needs AI agents to manage its content.** If stage 3 flagged AI/agent read/write of content (assistant / copilot / automation over the CMS), ask plainly: *"Do you want to expose Strapi's built-in MCP server so AI agents can read and write your content? It's GA since Strapi 5.49 and production-ready — the main limitations are no new media uploads and untyped dynamic zones."* **Off by default** — enable only on a clear yes (it's an attack-surface decision, not a maturity one). If enabled, bump the Strapi version floor to **≥ 5.49** and record the scoped-token plan. See `references/strapi-mcp-server.md`.
 5. Listen to preferences. If they push back on Strapi Cloud (cost, region, on-prem requirement), capture it and move to a self-hosted Strapi option (spec the Dockerfile + `docker-compose` with Postgres in stage 6 — see the Strapi Docker guide on https://docs.strapi.io).
 6. For each area below, either confirm their choice (with a brief sanity-check against the requirements) or suggest options if they're undecided. When suggesting, give 2-3 options with tradeoffs — don't just hand down a winner.
 7. For each decision, capture the **why** — what requirement or preference drove the choice.
@@ -233,18 +233,18 @@ Drive the requirements directly from stages 1 and 2. For each item in the user j
 - **Hosting — backend** — default Strapi Cloud. Alternatives: Render, Railway, Fly.io, AWS, self-hosted Docker
 - **Hosting — frontend** — Vercel, Netlify, Cloudflare Pages, etc. (all four first-class frameworks deploy to any of these)
 - **Frontend framework** — no default; ask. First-class: **Next.js** (broad ecosystem, app-style products), **TanStack Start** (type-safe full-stack React), **Astro** (content-heavy/static sites), **Vue/Nuxt** (Vue teams). Others (SvelteKit, SolidStart, Remix, plain React) supported too. See `references/frontend-frameworks.md`
-- **Auth** — preferred default is the **better-auth plugin** (*beta — confirm first*, needs Strapi ≥ 5.45, removes U&P; brings social/2FA/passkeys). Conservative/production default is Strapi's built-in **Users & Permissions** for end-users + Strapi admin auth for editors. External providers (Clerk, Auth0) only if SSO/enterprise needs justify. See `references/auth-better-auth.md`
+- **Auth** — default is Strapi's built-in **Users & Permissions** for end-users + Strapi admin auth for editors (production-ready, zero extra setup). Opt-in: the **better-auth plugin** when the user wants social/2FA/passkeys and accepts POC risk (*beta*, needs Strapi ≥ 5.45, removes U&P). External providers (Clerk, Auth0) only if SSO/enterprise needs justify. See `references/auth-better-auth.md`
 - **Media / file storage** — Strapi Cloud bundles media + CDN by default. For self-hosted: S3, R2, Cloudinary via the upload provider
 - **CI/CD** — GitHub Actions for the frontend; Strapi Cloud has built-in deploy-on-push
 - **Email / notifications** — Strapi email provider (Sendmail, SendGrid, Mailgun, Resend)
 - **Payments** — Stripe / Lemon Squeezy / Paddle if applicable, called from custom Strapi controllers or the frontend
 - **Analytics & monitoring** — PostHog, Plausible, Sentry
-- **MCP server (AI agent access)** — **off by default.** If stage 3 flagged AI/agent content access, enable Strapi's built-in MCP server (v5.47+, **beta**): `mcp.enabled` in `config/server`, exposed at `POST /mcp`, authed with a scoped Admin API token. Extend with custom tools via a plugin (`strapi.ai.mcp`). Don't enable speculatively. See `references/strapi-mcp-server.md`
+- **MCP server (AI agent access)** — **off by default.** If stage 3 flagged AI/agent content access, enable Strapi's built-in MCP server (GA since v5.49): `mcp.enabled` in `config/server`, exposed at `POST /mcp`, authed with a scoped Admin API token. Extend with custom tools via a plugin (`strapi.ai.mcp`). Don't enable speculatively. See `references/strapi-mcp-server.md`
 - **Styling** — Tailwind by default
 
 If a requirement from stage 3 makes a choice questionable (e.g., user needs offline-first sync, which Strapi doesn't natively do), flag it gently and discuss tradeoffs. Use the strapi-docs MCP or `WebFetch` against https://docs.strapi.io to verify capability claims before recommending against Strapi.
 
-**File template**: write `04-tech-decisions.md` from `templates/04-tech-decisions.template.md`. For each decision capture **Choice · Considered · Why**. Record the frontend framework explicitly (it drives stages 5-6) and the auth choice with its implications (Better Auth → beta + removes U&P + needs api-permissions; or stock U&P → Public/Authenticated roles).
+**File template**: write `04-tech-decisions.md` from `templates/04-tech-decisions.template.md`. For each decision capture **Choice · Considered · Why**. Record the frontend framework explicitly (it drives stages 5-6) and the auth choice with its implications (stock U&P → Public/Authenticated roles (default); or Better Auth → beta + removes U&P + needs api-permissions).
 
 ---
 
@@ -252,7 +252,7 @@ If a requirement from stage 3 makes a choice questionable (e.g., user needs offl
 
 **Goal**: Translate the requirements (stage 3) and tech decisions (stage 4) into concrete technical artifacts: **Strapi content types**, REST/GraphQL endpoints, custom controllers, and frontend routes.
 
-This is the engineering blueprint. It's still readable by humans but it's where the abstract "users can sign in" becomes a Better Auth-protected route and a `User` collection in Strapi.
+This is the engineering blueprint. It's still readable by humans but it's where the abstract "users can sign in" becomes an auth-protected route and a `User` collection in Strapi.
 
 **Ask the user**:
 - For content: do you want me to draft the Strapi schemas (collection types, single types, components, dynamic zones) from the entities we identified, then you review?
@@ -277,8 +277,8 @@ When you're unsure how a Strapi feature works (lifecycle hooks, dynamic zone que
   - Default population strategy — describe via route middleware (see https://docs.strapi.io/cms/api/rest/populate-select), not query params on every call
   - Custom controllers / routes — list with method, path, auth (better-auth session required vs. public), request/response shape, description
   - GraphQL — only if installed. List queries/mutations the frontend depends on
-- **MCP server** — *only if enabled in stage 4.* Note `mcp.enabled` in `config/server`, which content types/actions are exposed, the scoped Admin API token strategy (least-privilege per use case), any custom tools added via a plugin (`strapi.ai.mcp`), and the beta caveats (no media upload, dynamic zones untyped, stateless `POST /mcp` only). See `references/strapi-mcp-server.md`
-- **Auth flows (Better Auth)** — sign-up, sign-in, sign-out, password reset, social providers (which ones), session storage, and how the frontend gets the session. Reference https://github.com/strapi-community/plugin-better-auth and https://better-auth.com
+- **MCP server** — *only if enabled in stage 4.* Note `mcp.enabled` in `config/server`, which content types/actions are exposed, the scoped Admin API token strategy (least-privilege per use case), any custom tools added via a plugin (`strapi.ai.mcp`), and the known limitations (no media upload, dynamic zones untyped, stateless `POST /mcp` only). See `references/strapi-mcp-server.md`
+- **Auth flows** — sign-up, sign-in, sign-out, password reset, social providers (which ones, if any), session/JWT storage, and how the frontend gets the session — written for the stage-4 choice (stock U&P by default; Better Auth path references https://github.com/strapi-community/plugin-better-auth and https://better-auth.com)
 - **Permissions & roles** — *depends on the stage-4 auth choice.* **Stock Users & Permissions**: roles (Public, Authenticated, custom) and what each can read/write per content type. **Better Auth path**: content-API permissions are governed by `@strapi-community/plugin-api-permissions` instead (U&P is removed) — describe permissions in those terms. Admin roles for the editorial side either way. See `references/auth-better-auth.md`
 - **Lifecycles / policies / middlewares** — choose the layer by context: request/auth-aware logic (stamp `owner`/`author` = current user) goes in the **controller**; document-level logic without the request (slug generation, derived fields, notifications) goes in **Document Service middleware** (`strapi.documents.use()` in `register()`); **lifecycle hooks are no longer the v5 default** (no request context; fire twice on publish). For server-set fields, the `is-owner` policy, and owner-scoped reads, follow `references/strapi-build-cookbook.md` — the naive approaches return 400 in v5
 - **Pages & key components (frontend)** — the route/page tree in the **chosen framework's** convention (`app/`, `src/routes/`, `src/pages/`, or `pages/`). For each route: where it fetches Strapi data (loader/Server Component/`useFetch`/frontmatter), components, and any client interactivity. See `references/frontend-frameworks.md`
@@ -300,8 +300,8 @@ This file should be **self-contained** — the build agent shouldn't need to rea
 **Up-front instructions to bake into the spec for the build session**:
 - Use the **strapi-docs MCP** (if installed) for any Strapi API question; otherwise `WebFetch` https://docs.strapi.io.
 - The spec is **self-contained** — it never assumes any other skill is installed. Every build step is described concretely (commands, schemas, config) so the build session can execute it from the spec + the official Strapi docs alone.
-- Heed `references/strapi-build-cookbook.md` for the non-obvious Strapi v5 traps (server-set fields like `owner` via the Document Service, owner-scoped reads, an `is-owner` policy, seeding loginable U&P users + both roles) — the steps a build session gets wrong by default.
-- For the Better Auth path, follow the official Strapi tutorial linked in `references/auth-better-auth.md`.
+- **Inline the relevant `references/strapi-build-cookbook.md` traps into the spec itself** — a pasted `06-build-spec.md` in a fresh agent session cannot read this skill's files, so a pointer to `references/…` is dead text. Copy the applicable patterns into the matching milestones: server-set fields like `owner`/`author` stamped via the Document Service in the controller, the `is-owner` policy, slug generation via Document Service middleware for every uid-filtered type, owner-scoped reads, and seeding loginable U&P users + both roles. (The trailhead example's M4/M7 show the inlined form — that's the rule, not an option.)
+- For the Better Auth path, inline the install/config steps and link the official Strapi tutorial URL (https://strapi.io/blog/strapi-better-auth-tutorial-setup-guide-for-strapi-v5-and-next-js-16) — again, don't reference `references/auth-better-auth.md` from inside the spec.
 
 **Required sections**:
 
@@ -312,7 +312,7 @@ This file should be **self-contained** — the build agent shouldn't need to rea
 5. **Build order (milestones)** — discrete chunks the build agent can tackle one at a time. Each milestone has a clear "done when…" criterion. Default milestone shape:
    - **M1 — Strapi scaffold + Postgres + Strapi Cloud project linked**
    - **M2 — Content types, components, dynamic zones, draft/publish, i18n, permissions**
-   - **M3 — Auth**: Better Auth path → install the 3 plugins, remove U&P, configure providers (follow the official tutorial in `references/auth-better-auth.md`); or stock U&P path → configure Public/Authenticated roles
+   - **M3 — Auth**: stock U&P path → configure Public/Authenticated roles; or Better Auth path → install the 3 plugins, remove U&P, configure providers (inline the steps from `references/auth-better-auth.md` + the official tutorial URL into the spec)
    - **M4 — Custom controllers, lifecycles, route middlewares (default population)**
    - **M5 — Frontend scaffold + routes/pages + data fetching calling Strapi** (chosen framework)
    - **M6 — Auth UI wired to the auth client; protected routes work**

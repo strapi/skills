@@ -45,7 +45,7 @@
 - `POST /api/articles` — auth required (Authenticated role)
 
 ### Default population strategy
-- Configured via middlewares in `src/middlewares/` and applied in route files. See `references/content-modeling.md`.
+- Configured via API-scoped middlewares in `src/api/<api>/middlewares/` (UID `api::<api>.<name>`) and applied in route files. (`src/middlewares/` is for `global::` middlewares only.) See `references/content-modeling.md`.
 
 ### Custom routes
 - `POST /api/checkout` — auth required, calls Stripe, returns `{ url }`
@@ -54,27 +54,27 @@
 - Query `articles(filters, pagination)` — fields: ...
 
 ## MCP server (if enabled in stage 4)
-> Only if the product exposes Strapi's built-in MCP server (v5.47+, **beta**). Delete this section otherwise. See `references/strapi-mcp-server.md`.
+> Only if the product exposes Strapi's built-in MCP server (GA since v5.49). Delete this section otherwise. See `references/strapi-mcp-server.md`.
 - Enabled via `mcp: { enabled: true }` in `config/server`; endpoint `POST /mcp`
 - Auth: scoped **Admin API token** (`Authorization: Bearer <token>`), least-privilege per use case
 - Exposed content types / actions: [e.g. `api::article.article` → list/get/create/update/publish]
 - Custom tools (optional): [plugin + `strapi.ai.mcp` registrations, e.g. `approve-order`]
-- Caveats (beta): no new media uploads, dynamic zones untyped, stateless `POST`-only
+- Known limitations: no new media uploads, dynamic zones untyped, stateless `POST`-only
 
 ## Auth
 > Choose one based on stage 4. Use the matching block; delete the other.
 
-### Option A — Better Auth (`@strapi-community/plugin-better-auth`) ⚠️ beta
+### Option A — stock Users & Permissions (default)
+- email/password (+ optional providers via U&P), JWT-based
+- Roles below apply (Public / Authenticated / custom)
+
+### Option B — Better Auth (`@strapi-community/plugin-better-auth`) ⚠️ beta, opt-in
 - Plugin: https://github.com/strapi-community/plugin-better-auth · requires Strapi ≥ 5.45 · **removes Users & Permissions**
 - Config in `src/lib/auth.ts` (`betterAuth({ database: strapiAdapter(), advanced: { database: { generateId: 'serial' } } })`); enable in `config/plugins.ts`
 - Providers enabled: email/password, [Google, ...]
 - Session: cookie-based, mounted under `/api/auth`
-- Frontend: read the session via the Better Auth client (`better-auth/react` or `better-auth/vue`)
+- Frontend: read the session via the Better Auth client (`better-auth/react` or `better-auth/vue`), `baseURL` = Strapi origin + `/api/auth`
 - Protected routes: ...
-
-### Option B — stock Users & Permissions
-- email/password (+ optional providers via U&P), JWT-based
-- Roles below apply (Public / Authenticated / custom)
 
 ## Permissions & roles
 > **Better Auth path**: U&P is removed — content-API permissions are governed by `@strapi-community/plugin-api-permissions`. Describe per-content-type read/write there.
@@ -129,4 +129,4 @@
 > Prefix browser-safe values with the framework's public prefix (`NEXT_PUBLIC_` / `VITE_` / `PUBLIC_` / `NUXT_PUBLIC_`). Below shown with `VITE_` as an example — **replace it with your stage-4 framework's prefix** (e.g. `NEXT_PUBLIC_` for Next.js).
 - `VITE_STRAPI_URL` — public Strapi backend URL (browser-safe)
 - `STRAPI_API_TOKEN` — read-only token for **server-side** SSR fetches. **No public prefix** — must stay server-only or it leaks into the client bundle
-- `BETTER_AUTH_URL` — same as backend (Better Auth path only)
+- `VITE_AUTH_BASE_URL` — Better Auth **client** `baseURL` = Strapi origin **+ `/api/auth`** (browser-safe; Better Auth path only). Note it differs from the backend's `BETTER_AUTH_URL`, which is the bare origin

@@ -4,7 +4,7 @@ Drop filled-in example outputs here from real or sample products run through the
 
 ## Worked example: `trailhead/`
 
-A complete six-stage run for **Trailhead**, a community trail-conditions app. It exercises the non-default branches deliberately: **Next.js** frontend (not the TanStack Start default) and the **Better Auth (beta)** path (so it shows U&P-removed permissions via `plugin-api-permissions`, the `generateId: 'serial'` requirement, and cross-site-cookie handling). It also shows editorial vs user-generated content (Trails vs Reports), components, draft&publish, an `is-owner` policy, and the corrected `create-strapi-app` flags. Read it end-to-end to see how stage-4 choices propagate into the stage-5 spec and the stage-6 build plan.
+A complete six-stage run for **Trailhead**, a community trail-conditions app. It deliberately exercises the **Better Auth (beta, opt-in)** path rather than the stock U&P default (so it shows U&P-removed permissions via `plugin-api-permissions`, the `generateId: 'serial'` requirement, and cross-site-cookie handling), with a **Next.js** frontend. It also shows editorial vs user-generated content (Trails vs Reports), components, draft&publish, an `is-owner` policy, and the corrected `create-strapi-app` flags. Read it end-to-end to see how stage-4 choices propagate into the stage-5 spec and the stage-6 build plan.
 
 ## Suggested layout
 

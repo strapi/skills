@@ -14,10 +14,10 @@ The output is six markdown files (`01-product.md` through `06-build-spec.md`) �
 - Opinionated Strapi defaults you can override:
   - Backend: **Strapi v5** on **Strapi Cloud** with PostgreSQL
   - Frontend: **your choice** — first-class support for **Next.js, TanStack Start, Astro, Vue/Nuxt** (asked every time, no silent default)
-  - Auth: **`@strapi-community/plugin-better-auth`** ⚠️ *(currently beta — maintainers say not for production; needs Strapi ≥ 5.45 and removes Users & Permissions)*, or stock **Users & Permissions** for production/conservative builds
+  - Auth: stock **Users & Permissions** (default — production-ready), with **`@strapi-community/plugin-better-auth`** as the opt-in for social/2FA/passkeys ⚠️ *(currently beta — maintainers say not for production; needs Strapi ≥ 5.45 and removes Users & Permissions)*
   - Styling: Tailwind
 - **Self-contained** — the generated spec builds with no other skills installed; it references only official Strapi sources (docs, official blog posts, the official `strapi/LaunchPad` starter).
-- **Optional Strapi MCP server** — if the product needs AI agents to read/write its content, stage 4 can enable Strapi's built-in MCP server (v5.47+, beta). Off by default. See `references/strapi-mcp-server.md`.
+- **Optional Strapi MCP server** — if the product needs AI agents to read/write its content, stage 4 can enable Strapi's built-in MCP server (GA since v5.49). Off by default. See `references/strapi-mcp-server.md`.
 - Uses the `strapi-docs` MCP for fact-checking when installed; falls back to https://docs.strapi.io
 
 ## Folder layout
@@ -164,7 +164,7 @@ You can jump back and revise any earlier stage at any time — the skill will as
 
 - **Don't lead with tech.** The skill steers business-value first. Trust the order.
 - **Pick your frontend in stage 4.** The skill asks; Next.js, TanStack Start, Astro, and Vue/Nuxt are first-class, but any framework works.
-- **Auth is a real choice.** The Better Auth plugin is modern but currently beta (not for production per its maintainers); pick stock Users & Permissions if you're launching soon.
+- **Auth is a real choice.** Stock Users & Permissions is the default (production-ready); opt into the Better Auth plugin only if you want social/2FA/passkeys and accept that it's beta (not for production per its maintainers).
 - **Bring real constraints.** Compliance, region, team skills, budget — surface them in stage 1-3 so they shape the spec.
 - **Use the spec to start a new build session.** Stage 6 is self-contained — open your coding agent (Claude Code, Cursor, …) in a fresh repo, paste it, and start with milestone 1.
 

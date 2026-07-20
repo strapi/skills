@@ -65,12 +65,14 @@ Strapi v5 introduced `documentId` (a stable string) as the public identifier; th
 Strapi's REST `populate` defaults to *not* including relations/components/media. Two ways to fix that:
 
 1. **Per-request `populate`** — works but litters every frontend call with deep populate trees.
-2. **Route middleware** (recommended) — define a middleware in `src/middlewares/` that sets `ctx.query.populate` for the route. Apply it in the route file (`src/api/<api>/routes/<api>.ts`) so every call to that endpoint comes back fully populated.
+2. **Route middleware** (recommended) — define an API-scoped middleware that sets `ctx.query.populate` for the route. Apply it in the route file (`src/api/<api>/routes/<api>.ts`) so every call to that endpoint comes back fully populated.
+
+**Path ↔ UID matters**: an `api::article.populate-article` UID only resolves from **`src/api/article/middlewares/populate-article.ts`**. A file in `src/middlewares/` is a *global* middleware and is referenced as `global::populate-article` instead — mixing the two silently wires a middleware that never loads.
 
 Example shape (verify against current docs before pasting):
 
 ```ts
-// src/middlewares/populate-article.ts
+// src/api/article/middlewares/populate-article.ts  (API-scoped → api::article.populate-article)
 export default () => async (ctx, next) => {
   ctx.query.populate = { cover: true, author: true, blocks: { populate: '*' } }
   await next()

@@ -14,7 +14,7 @@
 - Database: PostgreSQL (managed by Strapi Cloud)
 - Backend hosting: Strapi Cloud
 - Frontend: [Next.js | TanStack Start | Astro | Vue/Nuxt] — from stage 4
-- Auth: [Better Auth via `@strapi-community/plugin-better-auth` (beta) | stock Users & Permissions]
+- Auth: [stock Users & Permissions (default) | Better Auth via `@strapi-community/plugin-better-auth` (beta, opt-in)]
 - Frontend hosting: [Vercel / Netlify / Cloudflare Pages]
 - Styling: Tailwind
 - (etc., from stage 4)
@@ -63,7 +63,9 @@ cd apps/web && npm install @tanstack/react-query   # + better-auth if using Bett
 **Done when**: Admin UI shows everything; permissions match the spec.
 
 ### M3 — Auth
-**Better Auth path (beta — confirmed in stage 4; follows the official Strapi tutorial: https://strapi.io/blog/strapi-better-auth-tutorial-setup-guide-for-strapi-v5-and-next-js-16):**
+**Stock U&P path (default):**
+- [ ] Configure Public/Authenticated role permissions per content type
+**Better Auth path (beta, opt-in — confirmed in stage 4; follows the official Strapi tutorial: https://strapi.io/blog/strapi-better-auth-tutorial-setup-guide-for-strapi-v5-and-next-js-16):**
 - [ ] Install + configure Better Auth (steps below follow the official tutorial linked above):
 - [ ] `npm install better-auth @strapi-community/plugin-better-auth @strapi-community/plugin-api-permissions @strapi-community/plugin-better-auth-dashboard @better-auth/infra zod@^4.1.12` (zod 4 pin is required)
 - [ ] **`npm uninstall @strapi/plugin-users-permissions`** — mandatory; remove it from `package.json` (disabling isn't enough — the plugin throws at boot if the package is present)
@@ -72,8 +74,6 @@ cd apps/web && npm install @tanstack/react-query   # + better-auth if using Bett
 - [ ] `npx @better-auth/cli generate --config src/lib/auth.ts --yes` to create the `user`/`session`/`account`/`verification` content types (api-permissions needs the `user` type)
 - [ ] Set `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` (public Strapi URL → `baseURL`), `CLIENT_URL` (frontend → `trustedOrigins`)
 - [ ] Requires Strapi ≥ 5.45; boot and verify `/api/auth/*` mounts (expect to debug — this is a beta/alpha stack)
-**Stock U&P path:**
-- [ ] Configure Public/Authenticated role permissions per content type
 **Done when**: A user can sign up + sign in + sign out via the frontend.
 
 ### M4 — Custom controllers / lifecycles / middlewares
@@ -102,7 +102,7 @@ cd apps/web && npm install @tanstack/react-query   # + better-auth if using Bett
 [copied from stage 5]
 
 ## Auth
-- Approach: [Better Auth (beta) | stock Users & Permissions]
+- Approach: [stock Users & Permissions (default) | Better Auth (beta, opt-in)]
 - If Better Auth: plugins `@strapi-community/plugin-better-auth` + `@strapi-community/plugin-api-permissions`; config in `src/lib/auth.ts` (`generateId: 'serial'`); Strapi ≥ 5.45
 - Providers: ...
 - Frontend client: `better-auth/react` (Next.js/TanStack) or `better-auth/vue` (Vue/Nuxt)
@@ -134,7 +134,7 @@ apps/web/src/routes/      # Next.js: app/ · Astro: src/pages/ · Nuxt: pages/
 > Public prefix depends on the framework: `NEXT_PUBLIC_` / `VITE_` / `PUBLIC_` / `NUXT_PUBLIC_`. Shown with `VITE_` — **replace with your stage-4 framework's prefix** (e.g. `NEXT_PUBLIC_STRAPI_URL` for Next.js).
 - `VITE_STRAPI_URL` — public Strapi backend URL (browser-safe)
 - `STRAPI_API_TOKEN` — server-only read token for SSR fetches; **no public prefix** (would leak to the client bundle)
-- `BETTER_AUTH_URL` — same as backend (Better Auth path only)
+- `VITE_AUTH_BASE_URL` — Better Auth **client** `baseURL` = Strapi origin **+ `/api/auth`** (browser-safe; Better Auth path only; backend `BETTER_AUTH_URL` stays the bare origin)
 
 ## Deployment
 - **Backend → Strapi Cloud**: https://cloud.strapi.io → connect repo (root `apps/cms`) → set env vars → deploy on push. See https://docs.strapi.io/cloud/getting-started/intro.

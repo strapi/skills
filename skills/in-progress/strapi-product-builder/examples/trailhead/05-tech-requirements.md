@@ -75,7 +75,7 @@
 - `PUT/DELETE /api/reports/:documentId` — authenticated **and** owner only (policy)
 
 ### Default population strategy
-- Route middleware on `GET /api/trails*` sets `populate` for `region`, `hero`, `location`, `seo`. Reports list populates `author` (name only) + `photo`. Configured in `src/middlewares/` and applied in route files — see `references/content-modeling.md`.
+- Route middleware on `GET /api/trails*` sets `populate` for `region`, `hero`, `location`, `seo`. Reports list populates `author` (name only) + `photo`. Configured as an API-scoped middleware in `src/api/trail/middlewares/populate-trail.ts` (UID `api::trail.populate-trail`) and applied in the route file — see `references/content-modeling.md`.
 
 ### Custom routes
 - None required for MVP — auto endpoints + an `is-owner` policy cover it.
@@ -154,4 +154,4 @@
 ### Next.js frontend
 - `NEXT_PUBLIC_STRAPI_URL` — public Strapi backend URL (browser-safe)
 - `STRAPI_API_TOKEN` — server-only read token for SSR fetches; **no `NEXT_PUBLIC_` prefix** (would leak to the client bundle)
-- `BETTER_AUTH_URL` — same as backend (used by the Better Auth client baseURL)
+- `NEXT_PUBLIC_AUTH_BASE_URL` — Better Auth **client** `baseURL` = Strapi origin + `/api/auth` (e.g., `https://trailhead.strapiapp.com/api/auth`; browser-safe — note the backend's `BETTER_AUTH_URL` is the bare origin)

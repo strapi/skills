@@ -5,7 +5,7 @@ Strapi **v5.47+** ships a **built-in MCP server** that lets AI clients (Claude D
 - Feature docs: https://docs.strapi.io/cms/features/strapi-mcp-server
 - Extending it with custom tools (plugin walkthrough): https://strapi.io/blog/how-to-extend-strapi-s-mcp-server-with-a-custom-tools-via-a-plugin
 
-> ⚠️ **Beta, opt-in, Strapi ≥ 5.47.0.** Off by default. Recommend it only when the product has a real "let an AI agent manage content" need — don't enable it speculatively. The surface is new; re-verify against the docs before writing it into a spec.
+> **GA, opt-in, Strapi ≥ 5.47.0.** Shipped beta in 5.47 and went **GA in 5.49.0** — it's production-ready (verified against the docs 2026-07-20, which list it as a standard free feature with no beta label). Off by default: recommend it only when the product has a real "let an AI agent manage content" need — don't enable it speculatively. Known limitations below still apply; re-verify against the docs before writing it into a spec.
 
 ## Don't confuse the two "MCP" things
 - **`strapi-docs` MCP** — a *docs-lookup* tool **Claude uses while building** (see `docs-lookup.md`). Nothing to do with the product being built.
@@ -43,11 +43,11 @@ export default ({ env }) => ({
 ## Extending with custom tools
 Register custom MCP tools from a Strapi **plugin** via the `strapi.ai.mcp` service — use this when the agent needs domain actions beyond CRUD (e.g. "approve order", "recompute totals"). Walkthrough in the blog linked above. Scaffold the plugin shell with `npx @strapi/sdk-plugin init` (see the Strapi plugin SDK docs on https://docs.strapi.io). Register tools in the plugin `register()` phase — `strapi.ai.mcp.registerTool(...)` must run **before** the MCP server starts (`mcp.start()`).
 
-## Caveats (beta)
+## Known limitations (GA, but these still apply)
 - **Cannot upload new media** — can only reference existing files.
 - Dynamic zones come through as untyped arrays; no nested population params for relations.
 - Custom fields fall back to their underlying Strapi types; circular component refs resolve to generic objects.
 - **Stateless** — each request spins an ephemeral server instance (no session persistence).
 
 ## Specifying it (stages 5–6, only if enabled)
-Record: `mcp.enabled` in `config/server`, which content types/actions are exposed, the scoped-token strategy, any custom tools (plugin + `strapi.ai.mcp` registrations), and the beta caveats above.
+Record: `mcp.enabled` in `config/server`, which content types/actions are exposed, the scoped-token strategy, any custom tools (plugin + `strapi.ai.mcp` registrations), and the known limitations above.
