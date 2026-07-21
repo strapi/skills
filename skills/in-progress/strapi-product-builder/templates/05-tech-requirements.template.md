@@ -126,7 +126,7 @@
 - (provider-specific vars)
 
 ### Frontend
-> Prefix browser-safe values with the framework's public prefix (`NEXT_PUBLIC_` / `VITE_` / `PUBLIC_` / `NUXT_PUBLIC_`). Below shown with `VITE_` as an example — **replace it with your stage-4 framework's prefix** (e.g. `NEXT_PUBLIC_` for Next.js).
-- `VITE_STRAPI_URL` — public Strapi backend URL (browser-safe)
+> `<PUBLIC>` below is a placeholder for the stage-4 framework's public prefix — `NEXT_PUBLIC_` (Next.js) / `VITE_` (TanStack Start, Vite) / `PUBLIC_` (Astro) / `NUXT_PUBLIC_` (Nuxt). **Substitute the real prefix when writing the output file** — never leave `<PUBLIC>` (or a wrong-framework prefix) in the generated spec.
+- `<PUBLIC>STRAPI_URL` — public Strapi backend URL (browser-safe)
 - `STRAPI_API_TOKEN` — read-only token for **server-side** SSR fetches. **No public prefix** — must stay server-only or it leaks into the client bundle
-- `VITE_AUTH_BASE_URL` — Better Auth **client** `baseURL` = Strapi origin **+ `/api/auth`** (browser-safe; Better Auth path only). Note it differs from the backend's `BETTER_AUTH_URL`, which is the bare origin
+- `<PUBLIC>AUTH_BASE_URL` — Better Auth **client** `baseURL` = Strapi origin **+ `/api/auth`** (browser-safe; Better Auth path only). Note it differs from the backend's `BETTER_AUTH_URL`, which is the bare origin

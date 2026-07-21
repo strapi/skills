@@ -13,7 +13,7 @@ For each decision: what was chosen, what other options were considered, and why 
 
 ## Backend / CMS
 - **Choice**: Strapi v5 (Node 20+)
-- **Plugins anticipated**: Better Auth, [GraphQL?, i18n?, custom fields?]
+- **Plugins anticipated**: [Better Auth (only if chosen below), GraphQL?, i18n?, custom fields?]
 - **Why**: [requirements link]
 
 ## Database

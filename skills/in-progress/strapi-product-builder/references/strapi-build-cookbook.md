@@ -68,7 +68,19 @@ For a per-request **allow/deny → 403** (free-plan limit, quota, role gate), us
 **Fix:** create users through the U&P user service (or the `/api/auth/local/register` flow) so the password hashes. Docs: https://docs.strapi.io/cms/features/users-permissions
 
 ## Seed BOTH roles
-Seed Public (`find`/`findOne` on public content) **and** Authenticated (`create`/`update`/`delete` on user-owned content) — an ownership app is unusable if only Public is seeded.
+**Trap:** a fresh Strapi denies every content-API action for **both** roles — being logged in grants nothing. Seeding only Public `find`/`findOne` makes the app *look* done (public pages render), then every signed-in write 403s — and that 403 reads as an auth/JWT bug, not the missing Authenticated permissions it actually is. Clicking permissions on in the admin UI doesn't survive a fresh deploy/DB — seed them in the script.
+**Fix:** each permission is its own record. Look the roles up by `type`, then create one `plugin::users-permissions.permission` entry per action per role:
+
+```ts
+const pub = await strapi.query('plugin::users-permissions.role').findOne({ where: { type: 'public' } })
+const auth = await strapi.query('plugin::users-permissions.role').findOne({ where: { type: 'authenticated' } })
+for (const action of ['api::report.report.find', 'api::report.report.findOne'])
+  await strapi.query('plugin::users-permissions.permission').create({ data: { action, role: pub.id } })
+for (const action of ['api::report.report.create', 'api::report.report.update', 'api::report.report.delete'])
+  await strapi.query('plugin::users-permissions.permission').create({ data: { action, role: auth.id } })
+```
+
+Action strings are `api::<api>.<content-type>.<find|findOne|create|update|delete>` (custom routes get their own action per the route's `handler`). Public gets reads on public content; Authenticated gets `create`/`update`/`delete` on user-owned content — an ownership app is unusable if only Public is seeded.
 
 ## Extending a plugin content type (e.g. the U&P `user`) = full replace, NOT merge
 **Trap:** a `src/extensions/users-permissions/content-types/user/schema.json` containing only your *added* attributes is treated as the **complete** schema — Strapi drops the base fields (`email`, `username`, `password`, `role`), the DB ends up without those columns (`no such column: t0.email`), and auth + seeding crash (DB-corrupting). **Fix:** the extension file must reproduce the **entire** base user schema **plus** your additions. (Verified on v5.48 — copy the base schema from `node_modules/@strapi/plugin-users-permissions`.)

@@ -131,10 +131,10 @@ apps/web/src/routes/      # Next.js: app/ · Astro: src/pages/ · Nuxt: pages/
 - (provider-specific)
 
 ### Frontend (apps/web)
-> Public prefix depends on the framework: `NEXT_PUBLIC_` / `VITE_` / `PUBLIC_` / `NUXT_PUBLIC_`. Shown with `VITE_` — **replace with your stage-4 framework's prefix** (e.g. `NEXT_PUBLIC_STRAPI_URL` for Next.js).
-- `VITE_STRAPI_URL` — public Strapi backend URL (browser-safe)
+> `<PUBLIC>` is a placeholder for the stage-4 framework's public prefix — `NEXT_PUBLIC_` (Next.js) / `VITE_` (TanStack Start, Vite) / `PUBLIC_` (Astro) / `NUXT_PUBLIC_` (Nuxt). **Substitute the real prefix when writing the spec** — never leave `<PUBLIC>` (or a wrong-framework prefix) in the output.
+- `<PUBLIC>STRAPI_URL` — public Strapi backend URL (browser-safe)
 - `STRAPI_API_TOKEN` — server-only read token for SSR fetches; **no public prefix** (would leak to the client bundle)
-- `VITE_AUTH_BASE_URL` — Better Auth **client** `baseURL` = Strapi origin **+ `/api/auth`** (browser-safe; Better Auth path only; backend `BETTER_AUTH_URL` stays the bare origin)
+- `<PUBLIC>AUTH_BASE_URL` — Better Auth **client** `baseURL` = Strapi origin **+ `/api/auth`** (browser-safe; Better Auth path only; backend `BETTER_AUTH_URL` stays the bare origin)
 
 ## Deployment
 - **Backend → Strapi Cloud**: https://cloud.strapi.io → connect repo (root `apps/cms`) → set env vars → deploy on push. See https://docs.strapi.io/cloud/getting-started/intro.
