@@ -90,7 +90,27 @@ Action strings are `api::<api>.<content-type>.<find|findOne|create|update|delete
 - **Public route:** make the webhook reachable with no JWT via **`config: { auth: false }`** on the route (not a Public-role permission).
 - **Carry identity:** pass the Strapi user id in Stripe's `client_reference_id`/`metadata` at checkout so the webhook knows whom to update.
 
+## Returning U&P-user relations (`owner`, `assignee`, `author.username`) in responses
+**Trap:** `sanitizeOutput` strips relations to the **private** `plugin::users-permissions.user` type from core `find`/`findOne` responses **entirely** — populating `owner: { fields: ['username'] }` still returns nothing. The queue UI's "claimed by X" silently renders empty. (Verified on v5.51.)
+**Fix (internal/high-trust apps):** override `find`/`findOne`, fetch via the core service, and whitelist exactly the safe user fields:
+```ts
+const trimUser = (u: any) => (u ? { id: u.id, documentId: u.documentId, username: u.username } : null)
+async find(ctx) {
+  await this.validateQuery!(ctx)
+  const q = await this.sanitizeQuery!(ctx)
+  const { results, pagination } = await (strapi.service('api::mention.mention') as any).find(q)
+  return { data: results.map((m: any) => ({ ...m, owner: trimUser(m.owner) })), meta: { pagination } }
+}
+```
+For public-facing apps prefer a derived boolean or a `/me/...` route instead of exposing the relation at all.
+
+## Custom MCP tools on the official built-in server (verified on v5.51)
+See `strapi-mcp-server.md` for enable/config. Two traps a build session hits:
+- **`registerTool` contract:** a single object — `name` inside it (positional `registerTool('name', {...})` fails with *tool with name "undefined" must declare auth policies*). Required shape: `{ name, title, description, auth: { policies: [...] } /* or devModeOnly: true */, resolveInputSchema: () => z.object({...}), resolveOutputSchema: () => z.object({...}) /* MANDATORY */, createHandler: (strapi, ctx) => async ({ args }) => ({ content: [...], structuredContent: {...} }) }` with `z` from `@strapi/utils`. Register in a plugin's `register()` (before `mcp.start()`). Policies are CASL checks — the gate passes when the presenting token's ability satisfies **any** policy; for read tools list both conventions: `{ action: 'api::x.x.find' }` and `{ action: 'plugin::content-manager.explorer.read', subject: 'api::x.x' }`.
+- **`POST /mcp` only accepts Admin Tokens (`kind: 'admin'`)** — a classic content-API token (Settings → API Tokens) authenticates fine on `/api/*` but gets JSON-RPC `-32000 "Authentication required"` on `/mcp`. Create via `POST /admin/admin-tokens` with `adminPermissions` drawn from the **admin RBAC registry** (content-api action strings are rejected as "not an existing permission action"): `{ "name": "reporting", "lifespan": null, "adminPermissions": [{ "action": "plugin::content-manager.explorer.read", "subject": "api::mention.mention" }] }`. The token's permissions also gate built-in tool visibility — a read-only token sees only `list_*`/`get_*` for its subjects (least privilege for free).
+
 ## Small gotchas
 - **SQLite local seed:** an empty `DATABASE_FILENAME=` resolves to a directory → `SQLITE_CANTOPEN`. Set `DATABASE_FILENAME=.tmp/data.db`.
-- **`sanitizeOutput` strips private relations** (like `owner`) from responses. If the frontend needs "is this mine?", expose a derived boolean or a `/me/...` route, not the raw relation.
+- **Core-router param is `:id`, not `:documentId`.** A custom `findOne` override reading `ctx.params.documentId` on a core route gets `undefined` → every detail request 404s while `find` works (maddening to diagnose). Custom routes name their own params; read `ctx.params.documentId ?? ctx.params.id`.
+- **Document Service pagination is top-level `limit`/`start`** — REST-style `pagination: { limit }` in `documents().findMany()` is a TS error in typed code and silently ignored in plugin JS (default page size applies).
 - **`uid`/slug fields are NOT auto-filled on API / Document Service / seed writes** (only admin-panel writes auto-generate them). Generate the slug in Document Service middleware for **every** content type whose `uid` you filter on — miss one and `?filters[slug]=…` silently returns nothing. (Spec tip: in stage 5, list slug middleware for *all* uid-filtered types, not just the obvious ones.)

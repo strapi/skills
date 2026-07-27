@@ -31,8 +31,8 @@ export default ({ env }) => ({
 ```
 
 - **Endpoint**: `POST /mcp` (only POST; GET/DELETE return `405`). Local: `http://localhost:1337/mcp`.
-- **Auth**: an **Admin API token** (Settings → API Tokens → Create), sent as `Authorization: Bearer <token>`.
-- **Least privilege**: create a **scoped token per use case** with only the permissions it needs — tool visibility, fields, and locales are all filtered by the token's permissions.
+- **Auth (verified on v5.51)**: an **Admin Token** (`kind: 'admin'`), sent as `Authorization: Bearer <accessKey>`. ⚠️ A classic content-API token (Settings → API Tokens) is **rejected** with JSON-RPC `-32000 "Authentication required"` even though it works on `/api/*`. Create via `POST /admin/admin-tokens` with `adminPermissions` from the **admin RBAC registry** — content-api action strings are rejected: `{ "name": "reporting", "lifespan": null, "adminPermissions": [{ "action": "plugin::content-manager.explorer.read", "subject": "api::article.article" }] }`.
+- **Least privilege**: create a **scoped token per use case** with only the permissions it needs — tool visibility, fields, and locales are all filtered by the token's permissions (a read-only token sees only `list_*`/`get_*` tools for its subjects).
 
 ## What it exposes (per content type, permission-gated)
 - **Collection types**: `list`, `get`, `create`, `update`, `delete`, `publish`, `unpublish`, `discard_draft`.
@@ -42,6 +42,24 @@ export default ({ env }) => ({
 
 ## Extending with custom tools
 Register custom MCP tools from a Strapi **plugin** via the `strapi.ai.mcp` service — use this when the agent needs domain actions beyond CRUD (e.g. "approve order", "recompute totals"). Walkthrough in the blog linked above. Scaffold the plugin shell with `npx @strapi/sdk-plugin init` (see the Strapi plugin SDK docs on https://docs.strapi.io). Register tools in the plugin `register()` phase — `strapi.ai.mcp.registerTool(...)` must run **before** the MCP server starts (`mcp.start()`).
+
+**Verified contract (v5.51)** — `registerTool` takes ONE object; positional `('name', {...})` fails with *tool with name "undefined" must declare auth policies*:
+```js
+const { z } = require('@strapi/utils')
+strapi.ai.mcp.registerTool({
+  name: 'approve-order',
+  title: 'Approve order',
+  description: '…',
+  auth: { policies: [{ action: 'plugin::content-manager.explorer.update', subject: 'api::order.order' }] }, // or devModeOnly: true
+  resolveInputSchema: () => z.object({ orderId: z.string() }),
+  resolveOutputSchema: () => z.object({ result: z.any() }),        // MANDATORY — omitting it throws
+  createHandler: (strapi, ctx) => async ({ args }) => ({
+    content: [{ type: 'text', text: '…' }],
+    structuredContent: { result: '…' },                            // must match resolveOutputSchema
+  }),
+})
+```
+Auth policies are CASL checks against the presenting token's ability — the gate passes when **any** policy matches. See the matching entry in `strapi-build-cookbook.md`.
 
 ## Known limitations (GA, but these still apply)
 - **Cannot upload new media** — can only reference existing files.
