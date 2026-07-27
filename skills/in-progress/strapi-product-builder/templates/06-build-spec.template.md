@@ -4,7 +4,7 @@
 > **Deviation protocol**: commands, structures, and reference conventions in this spec are **user decisions**. If you (the build agent) want to substitute any of them — build friction, a newer API, a "simpler" alternative — STOP and ask the user. Do not silently trade off.
 
 > **Build target**: Strapi v5 (deployed to Strapi Cloud) + [chosen frontend] frontend.
-> **Docs lookup**: query the `strapi-docs` MCP first; otherwise WebFetch https://docs.strapi.io.
+> **Docs lookup**: query the `strapi-docs` MCP first; otherwise WebFetch https://docs.strapi.io. **Frontend**: [chosen framework's docs URL — Next https://nextjs.org/docs / Astro https://docs.astro.build / Nuxt https://nuxt.com/docs / TanStack Start https://tanstack.com/start/latest/docs]. Verify version-sensitive conventions (file names, config keys, async APIs) against the CURRENT major before writing them — legacy compat hides renames (e.g. Next 16: `proxy.ts`, not `middleware.ts`).
 > **Self-contained**: build straight from this spec + the official Strapi docs. For the non-obvious v5 controller/ownership/seeding patterns, see the Document Service (https://docs.strapi.io/cms/api/document-service), controllers (https://docs.strapi.io/cms/backend-customization/controllers), and policies (https://docs.strapi.io/cms/backend-customization/policies) docs.
 
 ## Project overview

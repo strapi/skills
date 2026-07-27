@@ -1,6 +1,6 @@
 # Resources — curated external references
 
-Authoritative external sources the skill can cite when generating stage-5/6 output, tagged by capability. Citing the right one lets the future Claude Code build session verify the API surface before generating code.
+Authoritative external sources the skill can cite when generating stage-5/6 output, tagged by capability. Official vendor docs only — Strapi and the first-class frontend frameworks. Citing the right one lets the future Claude Code build session verify the API surface before generating code.
 
 ## How to use these
 
@@ -13,6 +13,10 @@ Authoritative external sources the skill can cite when generating stage-5/6 outp
 | Topic / capability | Resource | Type | Targets | Date |
 |---|---|---|---|---|
 | Strapi (general) | https://docs.strapi.io | official-docs | v5 (current) | live |
+| Next.js (frontend) | https://nextjs.org/docs | official-docs | current major | live |
+| Astro (frontend) | https://docs.astro.build | official-docs | current major | live |
+| Vue / Nuxt (frontend) | https://vuejs.org · https://nuxt.com/docs | official-docs | current major | live |
+| TanStack Start (frontend) | https://tanstack.com/start/latest/docs | official-docs | current major | live |
 | Strapi Cloud deploy | https://docs.strapi.io/cloud/getting-started/intro | official-docs | v5 | live |
 | Plugin SDK (scaffold/build plugins) | https://docs.strapi.io/cms/plugins-development/plugin-sdk | official-docs | v5 | live |
 | Plugin SDK CLI (`@strapi/sdk-plugin`) | https://github.com/strapi/sdk-plugin | reference-repo (official) | v5 | live |

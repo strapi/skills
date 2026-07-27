@@ -3,6 +3,8 @@
 Strapi is a headless backend, so the frontend is the user's choice. **Ask in stage 4; never assume.** This skill is *optimized* for four frameworks — it knows the scaffold command, route convention, public-env-var prefix, and hosting story for each — but any framework that can call a REST/GraphQL API works.
 
 > Verify scaffold commands against each framework's current docs before pasting into a build spec — scaffolding CLIs change often.
+>
+> **Verify conventions on new majors — not just scaffolds.** Frameworks rename file conventions and config keys across majors, and backwards compatibility hides staleness from every automated check (typecheck, boot, and tests all pass on the legacy name). The patterns you'd write from memory are exactly the ones to check. Known instance: **Next 16 renamed `middleware.ts` → `proxy.ts`** (`export default function proxy()`); the legacy name still works, so nothing flags it. Framework docs: Next https://nextjs.org/docs · Astro https://docs.astro.build · Nuxt https://nuxt.com/docs · TanStack Start https://tanstack.com/start/latest/docs. The stage-6 spec must carry the chosen framework's docs link alongside Strapi's.
 
 ## The four first-class options
 
