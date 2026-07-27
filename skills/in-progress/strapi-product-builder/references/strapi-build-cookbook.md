@@ -90,6 +90,10 @@ Action strings are `api::<api>.<content-type>.<find|findOne|create|update|delete
 - **Public route:** make the webhook reachable with no JWT via **`config: { auth: false }`** on the route (not a Public-role permission).
 - **Carry identity:** pass the Strapi user id in Stripe's `client_reference_id`/`metadata` at checkout so the webhook knows whom to update.
 
+## User-data exposure: `/api/users/me` only — never seed `user.find`
+**Trap:** seeding U&P's `user.find`/`findOne` (or clicking them on) lets ANY authenticated user — or any leaked JWT — enumerate every account's email via `GET /api/users`. Teams do it reflexively because a UI needs "assignee pickers" or "claimed by X" labels.
+**Fix (verified on v5.51):** the only user permission the Authenticated role gets is **`plugin::users-permissions.user.me`** — the frontend reads the current user from `GET /api/users/me`, and `/api/users` 403s for everyone. Features needing *other* users' identity build on **whitelisted relation fields** (`owner`/`assignee`/`actor` trimmed to `id`/`documentId`/`username` in the controller — next entry), never on a user list. Audit recipe: users list → expect 403; `?populate[<userRelation>]=*` on core routes → expect stripped; custom controllers → whitelist via a `trimUser`-style helper.
+
 ## Returning U&P-user relations (`owner`, `assignee`, `author.username`) in responses
 **Trap:** `sanitizeOutput` strips relations to the **private** `plugin::users-permissions.user` type from core `find`/`findOne` responses **entirely** — populating `owner: { fields: ['username'] }` still returns nothing. The queue UI's "claimed by X" silently renders empty. (Verified on v5.51.)
 **Fix (internal/high-trust apps):** override `find`/`findOne`, fetch via the core service, and whitelist exactly the safe user fields:

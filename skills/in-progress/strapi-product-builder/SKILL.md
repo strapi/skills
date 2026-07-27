@@ -294,6 +294,7 @@ When you're unsure how a Strapi feature works (lifecycle hooks, dynamic zone que
 
 **Robustness sweep — run this WITH the user after stage 5, before stage 6.** Feature interviews reliably miss operational hardening; don't wait for the user to ask "what's missing?". Walk this checklist and fold accepted items into 05 (they're each cheap to spec, expensive to retrofit):
 - **Silent failure modes** — pipeline/webhook errors: dead-letter storage (never drop data), ops alerting channel, "the tool must never fail silently"
+- **User-data exposure** — current user via `/api/users/me` ONLY; never seed `user.find` (account enumeration); user identity on other records whitelisted to `id`/`username` (see the cookbook entry)
 - **Metric definitions** — any score/KPI the product reports: ONE documented formula (window, weighting, timezone) or the dashboard number becomes contested
 - **Human correction loops** — anywhere AI/automation labels data: can a human override, does the override survive re-processing, is it flagged as human-set?
 - **Reproducibility/versioning** — stamp model/prompt/config versions on computed results so tool changes don't masquerade as data shifts
