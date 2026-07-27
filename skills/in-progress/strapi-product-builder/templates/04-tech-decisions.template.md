@@ -2,6 +2,13 @@
 
 For each decision: what was chosen, what other options were considered, and why this one fits the requirements.
 
+## Reference architecture (binding conventions)
+> When the user supplied repos/projects to emulate, record each one here. Separate **code reuse** (usually forbidden — greenfield) from **conventions** (usually binding). "Inspiration only" is NOT a valid entry — extract the concrete conventions.
+
+| Reference | Code reuse | Binding conventions extracted |
+|---|---|---|
+| [repo/url] | none — greenfield | [e.g. local plugins use the `@strapi/sdk-plugin` TS structure (`server/src/…`, exports → `dist/server`), per this repo] |
+
 ## Defaults applied (this skill is opinionated — confirm or override)
 
 - **Backend / CMS**: Strapi v5 ✅

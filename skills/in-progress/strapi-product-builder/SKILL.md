@@ -220,6 +220,7 @@ Drive the requirements directly from stages 1 and 2. For each item in the user j
 
 1. State the defaults above and ask: *"Backend will be Strapi v5 deployed to Strapi Cloud unless you have a reason to choose otherwise. For the frontend — I support Next.js, TanStack Start, Astro, or Vue/Nuxt well (or another framework you prefer). Anything you already have in mind?"*
 2. **Frontend — always ask, never assume.** There is no silent default. Once chosen, that choice parameterizes stages 5-6 (scaffold command, route tree, env-var prefix, auth wiring) per `references/frontend-frameworks.md`.
+2b. **Reference repos → binding conventions.** When the user supplies repos or prior projects ("architect it like X", "use Y as inspiration"), separate two things explicitly: **code reuse** (usually forbidden — greenfield) and **conventions** (usually binding). Extract the concrete conventions from each reference (plugin structure, folder layout, patterns — e.g. "local plugins: `sdk-plugin` TS structure per `<repo>`") and record them in `04-tech-decisions.md` as **binding**, carried into stages 5-6 as constraints. Never record a reference as just "inspiration only" — that reads as license to deviate.
 3. **Auth — default to stock Users & Permissions; offer Better Auth as the opt-in.** U&P is built in and production-ready, which matches the default Strapi Cloud deploy target. Offer the Better Auth plugin only when the requirements call for social login, 2FA, magic links, or passkeys — and say its status plainly: *"For auth the default is Strapi's built-in Users & Permissions — production-ready and zero extra setup. If you want social login/2FA/passkeys there's the Better Auth plugin, but it's currently beta (its maintainers say not for production), so it's a fit for a POC, not a launch. Which fits?"* Record the choice and its implications (the permissions model differs — see below).
 4. **MCP server — ask whether the product needs AI agents to manage its content.** If stage 3 flagged AI/agent read/write of content (assistant / copilot / automation over the CMS), ask plainly: *"Do you want to expose Strapi's built-in MCP server so AI agents can read and write your content? It's GA since Strapi 5.49 and production-ready — the main limitations are no new media uploads and untyped dynamic zones."* **Off by default** — enable only on a clear yes (it's an attack-surface decision, not a maturity one). If enabled, bump the Strapi version floor to **≥ 5.49** and record the scoped-token plan. See `references/strapi-mcp-server.md`.
 5. Listen to preferences. If they push back on Strapi Cloud (cost, region, on-prem requirement), capture it and move to a self-hosted Strapi option (spec the Dockerfile + `docker-compose` with Postgres in stage 6 — see the Strapi Docker guide on https://docs.strapi.io).
@@ -240,6 +241,7 @@ Drive the requirements directly from stages 1 and 2. For each item in the user j
 - **Payments** — Stripe / Lemon Squeezy / Paddle if applicable, called from custom Strapi controllers or the frontend
 - **Analytics & monitoring** — PostHog, Plausible, Sentry
 - **MCP server (AI agent access)** — **off by default.** If stage 3 flagged AI/agent content access, enable Strapi's built-in MCP server (GA since v5.49): `mcp.enabled` in `config/server`, exposed at `POST /mcp`, authed with a scoped Admin API token. Extend with custom tools via a plugin (`strapi.ai.mcp`). Don't enable speculatively. See `references/strapi-mcp-server.md`
+- **Optional dependencies & degradation** — for **each** external service (AI provider, email, payments, search, …): required or optional? If its key/config is absent, does the feature **disable cleanly** (feature flag + hidden UI + 503, core loop unaffected) or does the app break? Decide per dependency and record it — retrofitting graceful degradation after a build is far costlier than designing it in
 - **Styling** — Tailwind by default
 
 If a requirement from stage 3 makes a choice questionable (e.g., user needs offline-first sync, which Strapi doesn't natively do), flag it gently and discuss tradeoffs. Use the strapi-docs MCP or `WebFetch` against https://docs.strapi.io to verify capability claims before recommending against Strapi.
@@ -289,6 +291,17 @@ When you're unsure how a Strapi feature works (lifecycle hooks, dynamic zone que
 
 **File template**: write `05-tech-requirements.md` from `templates/05-tech-requirements.template.md` (the source of truth). It covers: content types (with field tables), components, dynamic zones, API surface (REST/population/custom routes/GraphQL), auth flows, permissions & roles, lifecycles/policies/middlewares, the frontend route tree, state management, background jobs, media, and env vars. Adapt the auth and frontend sections to the stage-4 choices (see `references/auth-better-auth.md` and `references/frontend-frameworks.md`) — don't assume Better Auth or TanStack Start if the user chose otherwise.
 
+**Robustness sweep — run this WITH the user after stage 5, before stage 6.** Feature interviews reliably miss operational hardening; don't wait for the user to ask "what's missing?". Walk this checklist and fold accepted items into 05 (they're each cheap to spec, expensive to retrofit):
+- **Silent failure modes** — pipeline/webhook errors: dead-letter storage (never drop data), ops alerting channel, "the tool must never fail silently"
+- **Metric definitions** — any score/KPI the product reports: ONE documented formula (window, weighting, timezone) or the dashboard number becomes contested
+- **Human correction loops** — anywhere AI/automation labels data: can a human override, does the override survive re-processing, is it flagged as human-set?
+- **Reproducibility/versioning** — stamp model/prompt/config versions on computed results so tool changes don't masquerade as data shifts
+- **Cost guards** — external-API budget counters with warn/halt thresholds
+- **Aging/SLA visibility** — queues need staleness flags and a digest, or old items rot invisibly
+- **Audit trail** — who did what, when, per record — if the product's value includes "the full data trail," model it explicitly
+- **Search** — any "library of past X" value prop needs full-text search, not just filters
+- **Empty states** — greenfield data means sparse day-one dashboards; design for it
+
 ---
 
 ## Stage 6 — Build spec
@@ -298,6 +311,7 @@ When you're unsure how a Strapi feature works (lifecycle hooks, dynamic zone que
 This file should be **self-contained** — the build agent shouldn't need to read the other five files to know what to build. Reference them as background, but include everything the agent needs to act.
 
 **Up-front instructions to bake into the spec for the build session**:
+- **Deviation protocol (bake this sentence into the spec, verbatim in spirit):** *"Commands, structures, and reference conventions in this spec are user decisions. If you want to substitute any of them — build friction, a newer API, a 'simpler' alternative — STOP and ask the user; do not silently trade off."* Build agents rationalize shortcuts precisely when momentum is highest; this line is what stops them.
 - Use the **strapi-docs MCP** (if installed) for any Strapi API question; otherwise `WebFetch` https://docs.strapi.io.
 - The spec is **self-contained** — it never assumes any other skill is installed. Every build step is described concretely (commands, schemas, config) so the build session can execute it from the spec + the official Strapi docs alone.
 - **Inline the relevant `references/strapi-build-cookbook.md` traps into the spec itself** — a pasted `06-build-spec.md` in a fresh agent session cannot read this skill's files, so a pointer to `references/…` is dead text. Copy the applicable patterns into the matching milestones: server-set fields like `owner`/`author` stamped via the Document Service in the controller, the `is-owner` policy, slug generation via Document Service middleware for every uid-filtered type, owner-scoped reads, and seeding loginable U&P users + both roles. (The trailhead example's M4/M7 show the inlined form — that's the rule, not an option.)
@@ -317,7 +331,7 @@ This file should be **self-contained** — the build agent shouldn't need to rea
    - **M5 — Frontend scaffold + routes/pages + data fetching calling Strapi** (chosen framework)
    - **M6 — Auth UI wired to the auth client; protected routes work**
    - **M7 — Seed data + media uploads**
-   - **M8 — Strapi Cloud deploy + frontend deploy + smoke test of core loop**
+   - **M8 — Automated e2e suite + deploy + smoke test**: turn the POC acceptance criteria into a Playwright suite (tests inject their own data via the app's real entry points — e.g. the webhook — so they're seed-independent), then Strapi Cloud deploy + frontend deploy + smoke test of the core loop
 6. **Strapi schemas** — copied from stage 5, formatted as Strapi v5 content-type `schema.json` (per the Content-Type Builder format in the docs)
 7. **API surface** — copied from stage 5: enabled REST endpoints, default population middlewares, custom routes/controllers, GraphQL (if any)
 8. **Auth** — install steps, config, providers, frontend client wiring for the chosen approach (Better Auth or U&P)
@@ -355,6 +369,7 @@ Don't silently update downstream stages — always confirm with the user. They m
 
 - **One stage at a time.** Don't dump all six stages of questions at once.
 - **2-3 questions per turn**, not 10. Wait for answers, then go deeper.
+- **Keep an open-questions ledger.** Real stakeholders answer out of order, partially, or not at all. Track every unanswered/half-answered question explicitly; re-ask once at the next natural moment; whatever is still open gets written into the stage file as a **flagged assumption** ("⚠️ assumption — unconfirmed: …"), never a silent guess. Carry the ledger forward — stage 6 lists surviving assumptions under Open questions.
 - **Summarize back** what you heard before drafting the file — this catches misunderstandings cheaply.
 - **Be opinionated about process, neutral about choices.** The order of stages is fixed (value first, tech last); but within each stage, the user's preferences win.
 - **Watch for tech-first drift.** If the user keeps trying to talk about frameworks during stages 1-3, gently park the tech thoughts in a notes section for stage 4 and steer back.

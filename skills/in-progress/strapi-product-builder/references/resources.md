@@ -14,6 +14,9 @@ Authoritative external sources the skill can cite when generating stage-5/6 outp
 |---|---|---|---|---|
 | Strapi (general) | https://docs.strapi.io | official-docs | v5 (current) | live |
 | Strapi Cloud deploy | https://docs.strapi.io/cloud/getting-started/intro | official-docs | v5 | live |
+| Plugin SDK (scaffold/build plugins) | https://docs.strapi.io/cms/plugins-development/plugin-sdk | official-docs | v5 | live |
+| Plugin SDK CLI (`@strapi/sdk-plugin`) | https://github.com/strapi/sdk-plugin | reference-repo (official) | v5 | live |
+| Plugin development (structure, server API) | https://docs.strapi.io/cms/plugins-development/developing-plugins | official-docs | v5 | live |
 | Better Auth — setup | *Strapi Better Auth Tutorial: Setup Guide for Strapi v5 and Next.js 16* — https://strapi.io/blog/strapi-better-auth-tutorial-setup-guide-for-strapi-v5-and-next-js-16 | strapi-blog | Strapi v5 (5.45+), Next.js 16 | 2026-05-21 |
 | Better Auth — plugins | https://github.com/strapi-community/plugin-better-auth | reference-repo | v5 | live |
 | Better Auth — library | https://better-auth.com | official-docs | — | live |

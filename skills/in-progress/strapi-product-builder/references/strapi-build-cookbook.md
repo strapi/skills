@@ -104,6 +104,28 @@ async find(ctx) {
 ```
 For public-facing apps prefer a derived boolean or a `/me/...` route instead of exposing the relation at all.
 
+## Local plugin structure — use the SDK layout, not a hand-rolled `strapi-server.js`
+**Trap:** a single-file plain-JS `strapi-server.js` plugin boots fine and *feels* faster (no build step), so build agents shortcut to it — silently costing TypeScript, the conventional `server/src/` layout every Strapi dev recognizes, any future admin-panel part, and extractability into a publishable package. If the user supplied reference plugins or the spec names the SDK, this shortcut is a spec deviation, not an implementation detail.
+**Fix:** the canonical structure (per `npx @strapi/sdk-plugin init` and the official demo repos; verified by migrating 5 plugins on v5.51):
+```
+src/plugins/<name>/
+├── package.json          # exports "./strapi-server": { source: server/src/index.ts, require: ./dist/server/index.js }
+│                         # + strapi: { kind: "plugin", name, displayName } + scripts: build/watch/verify (tsc -p server/tsconfig.build.json)
+├── strapi-server.ts      # re-exports createServer from ./server/src
+└── server/
+    ├── tsconfig.json + tsconfig.build.json   # build outDir: ../dist/server
+    └── src/
+        ├── index.ts      # createServer() assembling the parts below
+        ├── register.ts · bootstrap.ts · destroy.ts · config/index.ts
+        └── controllers/ · routes/ · services/   (each with an index.ts barrel)
+```
+Enable via `config/plugins.ts`: `'<name>': { enabled: true, resolve: './src/plugins/<name>' }`. **The runtime loads `dist/server/index.js`** — wire plugin builds into the app lifecycle (`"build:plugins": "for p in src/plugins/*/; do (cd $p && npm run build) || exit 1; done"` + `prebuild`/`predevelop` hooks) or a fresh clone boots without your plugins. Plugin routes: export route sets with `type: 'content-api'` (exposed at `/api/<plugin-name>/…`) or `type: 'admin'`.
+Docs: https://docs.strapi.io/cms/plugins-development/plugin-sdk · https://github.com/strapi/sdk-plugin · plugin structure https://docs.strapi.io/cms/plugins-development/plugin-structure
+
+## `strapi generate` — human tool, NOT for build automation (verified on v5.51)
+- v5 generators: `api`, `content-type`, `controller`, `service`, `policy`, `middleware`, `migration` — **the v4 `plugin` generator is gone**; scaffold plugins with `@strapi/sdk-plugin init` (also interactive).
+- It is **strictly interactive** (no flags, no args): piped stdin produces nothing — the prompt library exits silently without a TTY. A build agent invoking it hangs or no-ops. **Agents write the files directly** (core factories + the structures in this cookbook); mention `strapi generate` in specs only as a human affordance. It CAN generate controllers/services *into an existing plugin* when a human drives it.
+
 ## Custom MCP tools on the official built-in server (verified on v5.51)
 See `strapi-mcp-server.md` for enable/config. Two traps a build session hits:
 - **`registerTool` contract:** a single object — `name` inside it (positional `registerTool('name', {...})` fails with *tool with name "undefined" must declare auth policies*). Required shape: `{ name, title, description, auth: { policies: [...] } /* or devModeOnly: true */, resolveInputSchema: () => z.object({...}), resolveOutputSchema: () => z.object({...}) /* MANDATORY */, createHandler: (strapi, ctx) => async ({ args }) => ({ content: [...], structuredContent: {...} }) }` with `z` from `@strapi/utils`. Register in a plugin's `register()` (before `mcp.start()`). Policies are CASL checks — the gate passes when the presenting token's ability satisfies **any** policy; for read tools list both conventions: `{ action: 'api::x.x.find' }` and `{ action: 'plugin::content-manager.explorer.read', subject: 'api::x.x' }`.

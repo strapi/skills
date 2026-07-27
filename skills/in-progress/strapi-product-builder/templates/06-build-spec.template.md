@@ -1,6 +1,7 @@
 # [Product Name] — Build Spec
 
 > Hand this file to any coding agent (Claude Code, Cursor, etc.) — it is self-contained.
+> **Deviation protocol**: commands, structures, and reference conventions in this spec are **user decisions**. If you (the build agent) want to substitute any of them — build friction, a newer API, a "simpler" alternative — STOP and ask the user. Do not silently trade off.
 
 > **Build target**: Strapi v5 (deployed to Strapi Cloud) + [chosen frontend] frontend.
 > **Docs lookup**: query the `strapi-docs` MCP first; otherwise WebFetch https://docs.strapi.io.
@@ -88,12 +89,13 @@ cd apps/web && npm install @tanstack/react-query   # + better-auth if using Bett
 ### M7 — Seed data + media
 [write a seed script: create content via the **Document Service**; create end-users via the **U&P user service** so passwords hash; seed **both** Public and Authenticated permissions]
 
-### M8 — Deploy
+### M8 — E2E suite + deploy
 **Tasks**:
+- [ ] Turn the POC acceptance criteria below into a Playwright e2e suite (tests inject their own data via the app's real entry points so they're seed-independent; `trace: 'retain-on-failure'`)
 - [ ] Backend: push → Strapi Cloud auto-deploy
 - [ ] Frontend: connect host, set env vars, deploy
 - [ ] Smoke test the core loop end-to-end
-**Done when**: All POC acceptance criteria pass on deployed environments.
+**Done when**: e2e suite green locally; all POC acceptance criteria pass on deployed environments.
 
 ## Strapi schemas
 [copied from stage 5]
