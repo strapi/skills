@@ -230,6 +230,7 @@ Drive the requirements directly from stages 1 and 2. For each item in the user j
 **Areas to cover**:
 
 - **Backend / CMS** — default Strapi v5. Note Strapi version, Node version target, and whether any plugins are anticipated (i18n, Users & Permissions, GraphQL, custom fields)
+- **Module organization** — when the product is "built in modules": default to **`src/api/<name>` folders** (Strapi's native feature unit; content-type optional — route-only and service-only APIs are valid, and custom MCP tools register app-level). Choose **local plugins** only when a module needs admin-panel UI, cross-project reuse, or distribution — they add a build step `strapi develop` doesn't watch. Decide explicitly and record the why; see the modules entry in `references/strapi-build-cookbook.md`
 - **Database** — default Postgres on Strapi Cloud. SQLite is fine for local dev only. **Strapi v5 is SQL-only (PostgreSQL/MySQL/MariaDB/SQLite); MongoDB / document DBs are not supported** — if the user wants Mongo, that's a stage-1 product-fit issue (Strapi is the wrong backend), not a stage-4 tweak
 - **Hosting — backend** — default Strapi Cloud. Alternatives: Render, Railway, Fly.io, AWS, self-hosted Docker
 - **Hosting — frontend** — Vercel, Netlify, Cloudflare Pages, etc. (all four first-class frameworks deploy to any of these)

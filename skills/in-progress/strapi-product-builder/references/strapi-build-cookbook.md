@@ -104,7 +104,11 @@ async find(ctx) {
 ```
 For public-facing apps prefer a derived boolean or a `/me/...` route instead of exposing the relation at all.
 
-## Local plugin structure — use the SDK layout, not a hand-rolled `strapi-server.js`
+## Modules: `src/api/<name>` folders by default — local plugins only when earned
+**Decide this in stage 4, explicitly.** Strapi's native feature unit is an **api folder** (`src/api/<name>/` with `controllers/`, `services/`, `routes/` — **content-type optional**): route-only APIs (webhooks, custom endpoints) and service-only APIs (`strapi.service('api::analysis.ai')`) are both valid and load with zero extra wiring, compiled and watched by the app's own toolchain. Custom MCP tools register **app-level** from `src/index.ts` `register()` — no plugin required.
+**Local plugins are the right call only when** a module needs its own admin-panel UI, will be reused across projects, or will be distributed. They cost a per-plugin build step (`dist/server/` output the runtime loads) that **`strapi develop` does NOT rebuild on change**, plus stringly cross-module access. A single-instance app organizing "modules" as plugins is paying for extraction it may never do — extraction from a well-bounded `src/api/` folder later is cheap. (Verified both directions on v5.51: built 5 capabilities as SDK plugins, then folded them into api folders — same behavior, less machinery.)
+
+## Local plugin structure — when a plugin IS warranted, use the SDK layout, not a hand-rolled `strapi-server.js`
 **Trap:** a single-file plain-JS `strapi-server.js` plugin boots fine and *feels* faster (no build step), so build agents shortcut to it — silently costing TypeScript, the conventional `server/src/` layout every Strapi dev recognizes, any future admin-panel part, and extractability into a publishable package. If the user supplied reference plugins or the spec names the SDK, this shortcut is a spec deviation, not an implementation detail.
 **Fix:** the canonical structure (per `npx @strapi/sdk-plugin init` and the official demo repos; verified by migrating 5 plugins on v5.51):
 ```
