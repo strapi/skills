@@ -139,8 +139,77 @@ See `strapi-mcp-server.md` for enable/config. Two traps a build session hits:
 - **`registerTool` contract:** a single object — `name` inside it (positional `registerTool('name', {...})` fails with *tool with name "undefined" must declare auth policies*). Required shape: `{ name, title, description, auth: { policies: [...] } /* or devModeOnly: true */, resolveInputSchema: () => z.object({...}), resolveOutputSchema: () => z.object({...}) /* MANDATORY */, createHandler: (strapi, ctx) => async ({ args }) => ({ content: [...], structuredContent: {...} }) }` with `z` from `@strapi/utils`. Register in a plugin's `register()` (before `mcp.start()`). Policies are CASL checks — the gate passes when the presenting token's ability satisfies **any** policy; for read tools list both conventions: `{ action: 'api::x.x.find' }` and `{ action: 'plugin::content-manager.explorer.read', subject: 'api::x.x' }`.
 - **`POST /mcp` only accepts Admin Tokens (`kind: 'admin'`)** — a classic content-API token (Settings → API Tokens) authenticates fine on `/api/*` but gets JSON-RPC `-32000 "Authentication required"` on `/mcp`. Create via `POST /admin/admin-tokens` with `adminPermissions` drawn from the **admin RBAC registry** (content-api action strings are rejected as "not an existing permission action"): `{ "name": "reporting", "lifespan": null, "adminPermissions": [{ "action": "plugin::content-manager.explorer.read", "subject": "api::mention.mention" }] }`. The token's permissions also gate built-in tool visibility — a read-only token sees only `list_*`/`get_*` for its subjects (least privilege for free).
 
+## `unique: true` is a VALIDATION rule, not a database constraint (v5.51 — highest-value trap in this file)
+**Trap:** a schema field marked `"unique": true` is enforced **only by the content-API validation layer**. Strapi generates **no unique DB index**, so every write that skips that layer — **Document Service** calls, seeds, plugin ingest, cron jobs — can insert duplicates freely. The classic shape is a "safe" upsert:
+```ts
+const existing = await strapi.documents(uid).findFirst({ filters: { externalId } })
+if (existing) return existing            // ← check
+await strapi.documents(uid).create({ data })   // ← act. Two concurrent runs BOTH insert.
+```
+It survives testing (single writer) and breaks in production the first time a cron overlaps a manual trigger. Duplicates then **deadlock the rows**: the content API refuses to update either one (each violates uniqueness against the other), and MCP/admin clients see rows they can neither fix nor delete.
+**Fix — three layers, all cheap:**
+1. **A real index at bootstrap**, portable across SQLite/Postgres, plus a merge pass for pre-existing duplicates (merge = **re-parent the loser's children first**; deleting a row drops its relation link rows and orphans the trail):
+   ```ts
+   await strapi.db.connection.raw('CREATE UNIQUE INDEX IF NOT EXISTS mentions_external_id_uq ON mentions (external_id)')
+   ```
+   Guard each DDL separately and **alert ops on failure** — if the merge half-fails, the index creation then throws on every boot and the guard is silently absent.
+2. **create-catch-refetch** in the writer: on violation, re-query and return the winner instead of throwing.
+3. **An in-process overlap guard** on every recurring job (next entry).
+> Recover by the key the index actually fires on. A `uid`/slug index + name-based recovery is a 500 waiting to happen: distinct names (`"Docs!"` vs `"Docs"`) collide to one slug, so the refetch-by-name finds nothing and the raw DB error escapes. Also give `slugify()` a fallback — non-latin names slugify to `''` and all collide.
+
+## Recurring jobs: `config/cron-tasks.ts` does NOT serialize async runs
+**Trap:** node-schedule fires on the clock, not on completion. A task doing per-item network calls (AI analysis, API sync) routinely outruns its own interval — overlapping runs re-read the same "pending" rows and duplicate the work: double AI spend, duplicate activity rows, duplicate notifications, and concurrent create races.
+**Fix:** a module-level flag per job (single-instance apps), plus retry caps so failures don't starve the queue:
+```ts
+let running = false
+export const sweep = ({ strapi }) => ({
+  async run() {
+    if (running) { strapi.log.info('[sweep] skipped — previous run still in progress'); return 0 }
+    running = true
+    try { return await this.runSweep() } finally { running = false }
+  },
+})
+```
+Pair it with an **attempt counter** on the row (`analysisAttempts`), excluded from the work query past N, alerting ops **once** when an item parks — otherwise one permanently-failing item (or a bad API key) pings ops every minute forever. Reset the counter on success **and** on any explicit re-queue action, or a later re-queue inherits a spent budget.
+
+## Multi-write workflow operations need a transaction — and the guard belongs INSIDE it
+**Trap:** "update the row, then log an activity, then notify" is 3+ independent writes. A crash between them leaves half-applied state (a status change with no audit row — usually the invariant the spec promised). Separately, a status check *before* `strapi.db.transaction()` is advisory only: two concurrent claims both read `unanswered` and both succeed.
+**Fix:** Document Service calls **join an ambient transaction** (verified: `@strapi/database` propagates it via AsyncLocalStorage), so wrap the operation and re-check state under a row lock inside it:
+```ts
+return strapi.db.transaction(async ({ trx }) => {
+  const row = await trx('mentions').where({ document_id }).forUpdate().first()   // locks on Postgres
+  if (!ALLOWED_FROM.includes(row.status)) throw new WorkflowError(409, `cannot claim a '${row.status}' mention`)
+  const updated = await strapi.documents(uid).update({ documentId, data })
+  await logActivity(strapi, { ... })      // atomic with the update
+  return updated
+})
+```
+Keep external side effects (Slack, email) **outside** the transaction — they can't roll back. Put these methods on the **service**, not the controller: controllers become ctx adapters, and the same methods back custom routes, MCP tools, and cron jobs without re-implementing the rules. A documented state diagram that nothing enforces is decoration — make the transition table executable.
+
+## Admin permission actions: register in `register()`, and pick the right section
+**Trap (v5.51):** custom admin actions registered in the app's `bootstrap()` are **wiped off tokens and roles on every restart**. The admin plugin's own bootstrap prunes grants whose action isn't in the registry yet, and app `bootstrap()` runs *after* it — so each deploy silently revokes the checkboxes someone ticked. It reads like an auth bug, not a lifecycle bug. (Plugin-registered actions survive because plugin bootstrap runs earlier.)
+**Fix:** register app-level actions in `register()`:
+```ts
+await strapi.service('admin::permission').actionProvider.registerMany([
+  { section: 'settings', category: 'Pulse MCP tools', uid: 'pulse-mcp.queue', displayName: 'Pulse: response queue' },
+])
+```
+**Where it renders (two independent knobs):** `section` picks the tab — `contentTypes` → Collection/Single Types, `plugins` → the Plugins tab grouped by plugin, `settings` → the Settings tab grouped by `category`. `pluginName` sets the action id (`computeActionId`): omitted → `api::<uid>`; `'octolens'` → `plugin::octolens.<uid>`; `'admin'` → `admin::<uid>`. Rule: capability shipped **inside a plugin** → `section: 'plugins'` + `pluginName`; **app-level** capability (custom routes, MCP tools) → `section: 'settings'` + a feature `category`. Gate with `{ name: 'admin::hasPermissions', config: { actions: [...] } }` on admin routes, pass the same action to `addMenuLink({ permissions })` and `widgets.register({ permissions })` so the UI hides for roles that lack it, and keep admin-facing uids **textually distinct** from same-named U&P content-api permissions.
+**`displayName` is the whole documentation a teammate gets** on that screen — suffix mutating actions with `(write)`.
+
+## Auth: `jwtManagement: 'refresh'` issues 10-MINUTE access tokens
+**Trap:** enabling U&P refresh mode looks like a pure security upgrade, but `sessions.accessTokenLifespan` defaults to **600 seconds**. A frontend that stores the JWT in a 7-day cookie and has no rotation loop signs users out every ~10 minutes — and the symptom (random logouts) never points at a config default.
+**Fix:** match token lifetime to the session model you actually implemented. Internal tool with no rotation loop → `jwtManagement: 'legacy-support'` + `jwt: { expiresIn: '7d' }`, matching the cookie. Adopt refresh mode **together with** the frontend work: a second httpOnly cookie for the refresh token and rotation on 401. Verify by decoding a fresh token (`exp - iat`), not by reading config.
+Docs: https://docs.strapi.io/cms/features/users-permissions
+
+## Ingest loops: isolate per item, or one bad record poisons the pipeline
+**Trap:** a bare `await upsert(item)` inside a page loop lets one failure abort the whole run. With a newest-first walk and no cursor persistence, every subsequent run restarts at the same failing item — permanently blocking everything older. A guaranteed trigger: Strapi's **`string` type carries a 255-char max validator at the app layer** (not just the DB column), so one long `url`/`author` field is a deterministic poison pill. Use `text` for any externally-sourced string.
+**Fix:** try/catch per item → dead-letter row + `continue`, and **dedupe the dead letter on a stable key** (a re-walked window would otherwise write the same failure hundreds of times a day). Aggregate failures into **one** ops alert per run, not one per item — a systemic outage would post thousands. Surface a `truncated` flag when a page cap stops a run before its cutoff: silent truncation reads as "everything synced."
+
 ## Small gotchas
 - **SQLite local seed:** an empty `DATABASE_FILENAME=` resolves to a directory → `SQLITE_CANTOPEN`. Set `DATABASE_FILENAME=.tmp/data.db`.
 - **Core-router param is `:id`, not `:documentId`.** A custom `findOne` override reading `ctx.params.documentId` on a core route gets `undefined` → every detail request 404s while `find` works (maddening to diagnose). Custom routes name their own params; read `ctx.params.documentId ?? ctx.params.id`.
 - **Document Service pagination is top-level `limit`/`start`** — REST-style `pagination: { limit }` in `documents().findMany()` is a TS error in typed code and silently ignored in plugin JS (default page size applies).
+- **Next.js proxy route: 204 is a null-body status.** `new NextResponse('', { status: 204 })` **throws** — even an empty string counts as a body — so every DELETE proxied to Strapi 500s while the delete itself succeeded (the UI just never updates). Pass `text || null`.
+- **List vs detail populate profiles.** One populate middleware serving both `find` and `findOne` ships the full detail payload (responses + activities + comments) for **every row** of a 25-card list. Branch on `ctx.state.route.handler`: the list gets card fields plus relation **counts** (`comments: { count: true }`), the detail gets the full shape. Consumers then handle both forms (`Array.isArray(x) ? x.length : x?.count ?? 0`).
 - **`uid`/slug fields are NOT auto-filled on API / Document Service / seed writes** (only admin-panel writes auto-generate them). Generate the slug in Document Service middleware for **every** content type whose `uid` you filter on — miss one and `?filters[slug]=…` silently returns nothing. (Spec tip: in stage 5, list slug middleware for *all* uid-filtered types, not just the obvious ones.)
