@@ -5,3 +5,10 @@ Skills in this folder are **work in progress**. They are not stable, not reviewe
 ## What this folder is for
 
 Use `skills/in-progress/` as a staging area while a skill is being drafted, tested, or refined before it moves into the main skills set. Content here may be incomplete, change frequently, or follow conventions that have not been finalized yet.
+
+## Skills in this folder
+
+| Skill | Purpose |
+| --- | --- |
+| [strapi-testing](strapi-testing/SKILL.md) | Router — picks REST API integration vs unit vs GraphQL vs out-of-scope |
+| [strapi-rest-api-testing](strapi-rest-api-testing/SKILL.md) | REST API integration tests — docs for harness/DB; skill adds smoke test, safety checks, helpers |
