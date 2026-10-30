@@ -9,6 +9,15 @@
 ## The value
 [What the customer gets — the "after" picture]
 
+## Today's workaround
+[How people handle this today, and why that falls short]
+
+## Riskiest assumption
+[The one assumption that, if wrong, makes the product pointless]
+
+## Early signal
+[What you'd see in the first month that shows it's working]
+
 ## Product category
 [Tool / service / marketplace / platform / content product / etc.]
 

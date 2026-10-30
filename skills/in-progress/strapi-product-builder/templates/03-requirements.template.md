@@ -4,10 +4,14 @@
 - [Capability statement]
 - [Capability statement]
 
+## Value metrics (only if the value depends on one)
+- [Term, e.g. "fresh"]: [plain-words definition — what counts, over what time window]
+
 ## Account & auth
 - End-user accounts: yes/no — [why]
 - Editorial admin accounts: yes/no — [who edits content]
 - Roles needed: [Public, Authenticated, custom roles]
+- Account system per role: [role] → Strapi admin account (team, `/admin`) | end-user account (API)
 
 ## Content the product manages
 
@@ -16,6 +20,13 @@
 
 ### User-generated content (created via API)
 - [Entity]: [what it represents]
+
+### Where the first content comes from
+- [Entity]: [created by the team | imported from <source> (licence: …) | user-generated]
+- When a user wants something that isn't listed: [what they do]
+
+### Removing bad content (if users create content)
+- Who can hide or remove it: ... · How users report it: ... · How fast: ...
 
 ### Reusable shapes (likely Strapi components)
 - [shape]: [where it appears]

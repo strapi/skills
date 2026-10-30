@@ -15,11 +15,11 @@ For each decision: what was chosen, what other options were considered, and why 
 - **Database**: PostgreSQL ✅
 - **Backend hosting**: Strapi Cloud ✅
 - **Frontend**: _user's choice — pick one_ (first-class: Next.js / TanStack Start / Astro / Vue-Nuxt; other: ___)
-- **Auth**: stock Users & Permissions (default). Opt-in: `@strapi-community/plugin-better-auth` for social/2FA/passkeys ⚠️ *beta, not for production per maintainers; needs Strapi ≥ 5.45; removes Users & Permissions* — explicitly confirmed: yes/no
+- **Auth**: stock Users & Permissions (default). Opt-in: `@strapi-community/plugin-better-auth` for 2FA/magic links/passkeys (U&P already does social login) ⚠️ *beta, not for production per maintainers; needs Strapi ≥ 5.45; removes Users & Permissions* — explicitly confirmed: yes/no
 - **Styling**: Tailwind ✅
 
 ## Backend / CMS
-- **Choice**: Strapi v5 (Node 20+)
+- **Choice**: Strapi v5 (Node [22 | 24] — an LTS that Strapi supports and Strapi Cloud offers)
 - **Plugins anticipated**: [Better Auth (only if chosen below), GraphQL?, i18n?, custom fields?]
 - **Why**: [requirements link]
 
@@ -30,7 +30,7 @@ For each decision: what was chosen, what other options were considered, and why 
 ## Backend hosting
 - **Choice**: Strapi Cloud
 - **Region**: ...
-- **Plan**: ...
+- **Plan**: [entry plan — sleeps when idle, no backups (POC) | a plan that stays on, with backups] — see https://strapi.io/pricing-cloud
 - **Why**: ...
 
 ## Frontend framework
@@ -47,7 +47,17 @@ For each decision: what was chosen, what other options were considered, and why 
 - **Choice**: [stock Users & Permissions (default) | `@strapi-community/plugin-better-auth` (beta, opt-in) | Clerk/Auth0/...]
 - **If Better Auth**: acknowledged beta/not-for-production; Strapi ≥ 5.45; U&P removed; content-API perms via `@strapi-community/plugin-api-permissions`
 - **Providers enabled**: email/password, [Google, GitHub, ...]
+- **What Users & Permissions lacks** (Better Auth only): [2FA | magic links | passkeys | ...] — U&P already supports social providers such as Google
 - **Why**: ...
+
+## Session topology
+- **Where the session lives**: [U&P JWT in an `httpOnly` cookie on the frontend's domain, sent to Strapi from server code | Better Auth cookie | ...]
+- **Cross-site choice** (frontend and Strapi on different sites, e.g. `*.vercel.app` + `*.strapiapp.com`): [shared parent domain via custom domains | proxy through the frontend's server | token held by the frontend's server]
+- **Why**: ...
+
+## Environments
+- [local | preview | production]: frontend → [which Strapi]
+- **Preview deploys write to**: [their own Strapi | nothing | production — reason: ...]
 
 ## Media / file storage
 - **Choice**: Strapi Cloud media (default) | [S3 | R2 | Cloudinary if self-hosted]
@@ -64,6 +74,12 @@ For each decision: what was chosen, what other options were considered, and why 
 ## Payments
 - **Choice**: [Stripe | Lemon Squeezy | Paddle | n/a]
 - **Why**: ...
+
+## Outside services (required or optional)
+| Service | Required? | If its key is missing or it fails | Test mode |
+|---|---|---|---|
+| [e.g. Stripe] | [required] | [checkout shows an error; nothing is charged] | [test keys] |
+| [e.g. OpenAI] | [optional] | [feature hidden, 503; core loop unaffected] | [local mock via `OPENAI_BASE_URL`] |
 
 ## Analytics & monitoring
 - **Choice**: [PostHog | Plausible | Sentry | ...]
