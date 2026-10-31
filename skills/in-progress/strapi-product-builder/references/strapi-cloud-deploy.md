@@ -35,15 +35,18 @@ The order follows https://docs.strapi.io/cloud/getting-started/deployment (check
 5. Set **environment variables** — gate on the stage-4 auth choice:
    - Cloud's defaults show in the **Variables** tab. Check there before adding `APP_KEYS`, `JWT_SECRET`, `ADMIN_JWT_SECRET`, `API_TOKEN_SALT`, `TRANSFER_TOKEN_SALT` or `ENCRYPTION_KEY` yourself (`ENCRYPTION_KEY` lets admins view API tokens again after creation). Never add `DATABASE_*`
    - Any provider keys (e.g., `GOOGLE_CLIENT_ID`, `STRIPE_SECRET_KEY`)
-   - **Better Auth path only** (skip all of these on stock Users & Permissions — U&P needs no extra auth vars beyond `JWT_SECRET`):
+   - The CORS origins variable read by `config/middlewares.ts` (both paths)
+   - **Stock U&P path:** `PUBLIC_URL` (if email confirmation or social login is on — Strapi's public URL, read as `url` in `config/server.ts`), and the values `bootstrap()` seeds into the U&P plugin store: the reset-password and confirmation URLs, and each provider's client ID, secret and frontend redirect URL
+   - **Better Auth path only:**
      - `BETTER_AUTH_SECRET` (generate with `openssl rand -hex 32`)
      - `BETTER_AUTH_DASHBOARD_SECRET` (only with the dashboard plugin; generate with `openssl rand -hex 32` — the README's example falls back to a hard-coded key)
      - `BETTER_AUTH_URL` (the Better Auth `baseURL`, per the session topology: the custom API domain (e.g. `https://api.example.com`), or the frontend's origin under the proxy — not `*.strapiapp.com`, which Safari treats as third-party)
      - `CLIENT_URL` (the frontend public URL → `trustedOrigins`)
+     - `AUTH_COOKIE_DOMAIN` (shared parent domain only: the parent domain, e.g. `example.com`)
 6. **Deploy**. First deploy takes a few minutes (build + migrations).
-7. Open the admin URL (`https://<project>.strapiapp.com/admin`) and create the first admin user.
+7. Right after the first deploy, open the admin URL (`https://<project>.strapiapp.com/admin`) and create the first admin user. Until you do, anyone who opens it can register as super admin.
 8. **Check** the content-API permissions that `bootstrap()` seeded — `Public`/`Authenticated` roles under Users & Permissions on the stock path, or Settings → API Permissions (`plugin-api-permissions`) on the Better Auth path. Change them in code, not here: the seed restores missing grants on every boot.
-9. Generate API tokens (Settings → API Tokens) for any frontend that needs read access — read-only for public reads.
+9. Create API tokens (Settings → API Tokens) for any frontend that needs read access: a **custom** token holding only the `find`/`findOne` actions it calls. Not the read-only type: it allows every `find` route, including `GET /api/users`, which lists every account's email.
 
 ## Updating after first deploy
 
@@ -54,7 +57,7 @@ The order follows https://docs.strapi.io/cloud/getting-started/deployment (check
 ## Common gotchas
 
 - **First deploy 500s on `/admin`** — usually an `APP_KEYS` length mismatch. If you copied values from a local `.env` into the Cloud settings, remove them and check what the Variables tab lists as defaults.
-- **Media URLs return 403** — make sure `Public` role has read permission on the upload plugin's `find` action.
+- **Don't grant Public the upload plugin's `find`** to fix missing images: it lists every file in the media library. Media fields populate without it; if images are missing, check that the request populates the field.
 - **Better Auth callback URL mismatch** (Better Auth path only) — `BETTER_AUTH_URL` (used as `baseURL` in `src/lib/auth.ts`) must equal the public auth origin for the chosen session topology exactly (including `https://`, no trailing slash) — a custom API domain or the frontend's origin, not `*.strapiapp.com`. Update OAuth provider redirect URIs to `<BETTER_AUTH_URL>/api/auth/callback/<provider>`.
 - **CORS** — set `config/middlewares.ts` `strapi::cors` `origin` to exactly the frontend origins whose browsers call Strapi (`[]` if every call goes through the frontend's server). A bare `strapi::cors` defaults to `origin: '*'` with `credentials: true`. Never `*` with credentials; limit preview-deploy patterns to domains you control.
 

@@ -96,6 +96,8 @@ export const auth = betterAuth({          // export the INSTANCE
 export default auth
 ```
 
+If password reset or email verification is in scope, add `emailAndPassword.sendResetPassword` and `emailVerification.sendVerificationEmail`: Better Auth sends no email without them. Each calls the product's email provider, which needs a local test mode (e.g. an SMTP catcher such as Mailpit).
+
 **5. Generate the Better Auth content types** (`user`, `session`, `account`, `verification` — without them auth fails and `plugin-api-permissions` warns the user type is missing):
 
 ```bash
@@ -120,6 +122,7 @@ Set env vars (locally and in Strapi Cloud):
 - `BETTER_AUTH_SECRET` — `openssl rand -hex 32`
 - `BETTER_AUTH_URL` — the public auth origin, per the session topology: the custom API domain (e.g. `https://api.example.com`), or the frontend's origin under the proxy — not `*.strapiapp.com`, which Safari treats as third-party. Must match exactly what providers have as the redirect origin.
 - `CLIENT_URL` — public URL of the frontend, read into `trustedOrigins` above.
+- `AUTH_COOKIE_DOMAIN` — shared parent domain only: empty locally, the parent domain (`example.com`) in production. Turn on `advanced.crossSubDomainCookies` only when it's set: a cookie for `example.com` is dropped on localhost, so local sign-in would fail.
 - `BETTER_AUTH_DASHBOARD_SECRET` — only if `plugin-better-auth-dashboard` is installed. Set a real value: the plugin README's example falls back to a hard-coded key when it's missing.
 - Provider-specific: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, etc.
 
@@ -147,13 +150,13 @@ The stage-4 session topology decides most of the values above. Better Auth's doc
 
 | Setting | Shared parent domain (`app.example.com` + `api.example.com`) | Proxy (the frontend forwards `/api/auth/*` to Strapi) |
 |---|---|---|
-| Cookie | `advanced.crossSubDomainCookies: { enabled: true, domain: 'example.com' }` — or the most specific domain that covers both | First-party on the frontend's domain; no cross-subdomain setting |
+| Cookie | `advanced.crossSubDomainCookies: { enabled: true, domain: process.env.AUTH_COOKIE_DOMAIN }`, only when `AUTH_COOKIE_DOMAIN` is set (production `example.com`, or the most specific domain that covers both; empty locally) | First-party on the frontend's domain; no cross-subdomain setting |
 | `BETTER_AUTH_URL` (`baseURL`) | `https://api.example.com` | The frontend's public origin, since browsers and providers reach auth through it |
 | Client `baseURL` | `https://api.example.com/api/auth` | `https://app.example.com/api/auth` |
 | Provider redirect URI | `https://api.example.com/api/auth/callback/<provider>` | `https://app.example.com/api/auth/callback/<provider>` |
 | `trustedOrigins` | `https://app.example.com` | `https://app.example.com` |
 | CORS (`strapi::cors`) | `origin: ['https://app.example.com']`, credentials on; client calls use `credentials: 'include'` | `origin: []` if nothing else calls Strapi from the browser |
-| Host setup | Custom domains on both hosts (every Strapi Cloud plan includes them) | A rewrite on the frontend host (Vercel `rewrites`, Netlify `[[redirects]]`, or a framework route) |
+| Host setup | Custom domains on both hosts (every Strapi Cloud plan includes them) | A framework-level rewrite or server route on the frontend, forwarding to `AUTH_PROXY_TARGET` (Next.js `rewrites()`, Nuxt `routeRules` proxy, a catch-all server route). A host-only rewrite (`vercel.json`, Netlify `[[redirects]]`) doesn't run under the local dev server |
 
 ## Mapping Better Auth users to Strapi content
 
@@ -168,7 +171,7 @@ Better Auth manages its own `user` and `session` tables. To attach Strapi-side d
 Because the Better Auth path **removes Users & Permissions**, the usual "Public / Authenticated role per content type" model does not apply here. Instead:
 
 - **Content-API permissions are governed by `@strapi-community/plugin-api-permissions`.** Configure which roles can read/write each content type there. (Seed Public-role read permissions on bootstrap — the tutorial shows the snippet for Public only. This file has no verified snippet yet for Authenticated or for find-or-create, so 06 makes it a build-time step: fetch the tutorial's snippet, extend it, and check the result on Settings → API Permissions.)
-- **Content types that relate to `user`** (an `author`) can't be created until the generate step has created the `user` type. Create them, or add that relation, after the generate step. The UID of the generated type isn't recorded here: read it from what the generate step created and use it as the relation's `target`.
+- **Content types that relate to `user`** (an `author`) can't get their relation to `user` until the generate step has created that type. Create the content type with the others and add only that attribute after the generate step, as a one-way relation (no `inversedBy`, since the generated user schema has no matching field). Deferring the whole type would also defer every type that relates to it. The UID of the generated type isn't recorded here: read it from what the generate step created and use it as the relation's `target`.
 - **Lock down the generated auth types.** After the generate step, check Settings → API Permissions: no role (Public or Authenticated) gets any action on `user`, `session`, `account` or `verification`, and the `bootstrap()` seed keeps it that way. When a content type relates to `user` (an `author`), populate only whitelisted fields (`id`, a display name), never the whole user. (From a design review of the bundled Trailhead example; not yet checked against a running plugin.)
 - A request is "authenticated" when it carries a valid Better Auth session cookie. Gate `create`/`update`/`delete` of user-owned content on an authenticated session.
 - For per-record ownership ("only the author can edit their article"), use the plugin's owner middleware, or write a Strapi **policy** (`src/policies/is-owner.ts`) and attach it to the route.

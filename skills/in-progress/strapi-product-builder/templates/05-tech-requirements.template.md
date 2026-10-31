@@ -71,7 +71,7 @@
 - Roles below apply (Public / Authenticated / custom)
 
 ### Option B — Better Auth (`@strapi-community/plugin-better-auth`) ⚠️ beta, opt-in
-- Content types that relate to `user`: created (or given that relation) after the generate step; relation `target` = [the generated user UID — read it after generate]
+- Relations to the Better Auth `user`: the type is created with the others, and only that attribute is added after the generate step, as a one-way relation (no `inversedBy`); relation `target` = [the generated user UID — read it after generate]
 - Plugin: https://github.com/strapi-community/plugin-better-auth · requires Strapi ≥ 5.45 · **removes Users & Permissions**
 - Config in `src/lib/auth.ts` (`betterAuth({ database: strapiAdapter(), advanced: { database: { generateId: 'serial' } } })`); enable in `config/plugins.ts`
 - Providers enabled: email/password, [Google, ...]
@@ -96,6 +96,7 @@
 - **Public**: read [content types]
 - **Authenticated**: read+write [content types]
 - **Custom end-user role `[name]`**: ...
+- `plugin::upload`: no Public action (media fields populate without it; `find` lists every file); Authenticated gets `upload` only if users upload, never `find` or `destroy`
 
 ### Admin roles (Strapi admin panel, `/admin`)
 - **Editor**: edits [content types]
@@ -104,11 +105,11 @@
 - How these roles exist on a fresh database: [user step after the first admin signs in | seeded]
 
 ## Server-side handlers
-> Every frontend server-side handler that calls Strapi (route handler, server action, loader, server route). A handler that reads private data or writes for a user checks the session before calling Strapi; a public read that sends a token uses a read-only one, never full-access; a user ID or owner comes from the session, never from the request body.
+> Every frontend server-side handler that calls Strapi (route handler, server action, loader, server route). A handler that reads private data or writes for a user checks the session before calling Strapi; a public read that sends a token uses a custom token limited to the read actions it needs, never read-only or full-access; a user ID or owner comes from the session, never from the request body.
 
 | Handler | Calls Strapi with | Checks first |
 |---|---|---|
-| [e.g. `app/articles/[slug]/page.tsx`] | read-only API token | nothing — public read |
+| [e.g. `app/articles/[slug]/page.tsx`] | custom read token | nothing — public read |
 | [e.g. `app/api/comments/route.ts` POST] | the user's JWT, from the session cookie | session present, else 401 |
 
 ## Lifecycles / policies / middlewares
@@ -123,13 +124,13 @@
 
 ### Route: `/` (home)
 - Access: public
-- Fetch: `GET /api/page?filters[slug]=home&populate=...` — read-only API token, on the server
+- Fetch: `GET /api/page?filters[slug]=home&populate=...` — custom read token, on the server
 - Rendering: [built ahead, refreshed by <rebuild | time-based refresh | Strapi webhook> | per request | in the browser]
 - Components: Hero, FeatureGrid, CTA
 
 ### Route: `/articles/[slug]`
 - Access: public
-- Fetch: `GET /api/articles?filters[slug]=<slug>` — read-only API token, on the server
+- Fetch: `GET /api/articles?filters[slug]=<slug>` — custom read token, on the server
 - Rendering: ...
 - States (core-loop routes): loading · empty · error · not found
 - Components: ArticleHeader, ArticleBody, RelatedArticles
@@ -157,6 +158,7 @@
 |---|---|---|---|---|
 | [e.g. Stripe] | checkout | required for paid plans | checkout shows an error; nothing is charged | test keys |
 | [e.g. OpenAI] | summaries | optional | feature hidden, 503; core loop unaffected | local mock via `OPENAI_BASE_URL` |
+| [e.g. email provider] | reset and confirmation emails | required if those flows exist | [what users see] | local SMTP catcher (e.g. Mailpit) |
 | [e.g. `apps/worker`] | nightly import | required | ops alert; retried next run (retry cap) | runs against local Strapi |
 
 ## Hosting & environments
@@ -182,11 +184,15 @@
 - `BETTER_AUTH_SECRET` — `openssl rand -hex 32` (Better Auth path only)
 - `BETTER_AUTH_URL` — the public auth origin for the session topology: custom API domain, or the frontend's origin under the proxy (Better Auth path only)
 - `CLIENT_URL` — frontend URL, used for `trustedOrigins` (Better Auth path only)
+- `AUTH_COOKIE_DOMAIN` — shared parent domain only: empty locally, the parent domain in production; turns on `crossSubDomainCookies` (Better Auth path only)
+- `PUBLIC_URL` — Strapi's public URL, read as `url` in `config/server.ts`; U&P builds the confirmation link and provider redirect URLs from it (stock U&P, if email confirmation or social login is on)
+- Stock U&P path: the reset-password and confirmation URLs, and each provider's client ID, secret and frontend redirect URL, seeded into the plugin store
 - `BETTER_AUTH_DASHBOARD_SECRET` — only if the dashboard plugin is installed; set a real value (the plugin README's example falls back to a hard-coded key)
 - (provider-specific vars)
 
 ### Frontend
 > `<PUBLIC>` below is a placeholder for the stage-4 framework's public prefix — `NEXT_PUBLIC_` (Next.js) / `VITE_` (TanStack Start, Vite) / `PUBLIC_` (Astro) / `NUXT_PUBLIC_` (Nuxt). **Substitute the real prefix when writing the output file** — never leave `<PUBLIC>` (or a wrong-framework prefix) in the generated spec.
 - `<PUBLIC>STRAPI_URL` — public Strapi backend URL (browser-safe)
-- `STRAPI_API_TOKEN` — read-only token for **server-side** SSR fetches. **No public prefix** — must stay server-only or it leaks into the client bundle
+- `STRAPI_API_TOKEN` — custom token for **server-side** SSR fetches, holding only the `find`/`findOne` actions the routes call (not the read-only type, which reads every `find` route, `GET /api/users` included). **No public prefix** — must stay server-only or it leaks into the client bundle
 - `<PUBLIC>AUTH_BASE_URL` — Better Auth **client** `baseURL` = the origin the browser sends auth calls to **+ `/api/auth`** (browser-safe; Better Auth path only). Note it differs from the backend's `BETTER_AUTH_URL`, which is a bare origin
+- `AUTH_PROXY_TARGET` — proxy topology only: the Strapi origin the frontend forwards `/api/auth/*` to (server-only)
