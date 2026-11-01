@@ -35,6 +35,7 @@ For each decision: what was chosen, what other options were considered, and why 
 
 ## Frontend framework
 - **Choice**: [Next.js | TanStack Start | Astro | Vue/Nuxt | other]
+- **Chosen by**: the user, answering the framework question on [date]: "[their words]"
 - **Considered**: ...
 - **Why**: ...
 - **Routes live in**: [`app/` | `src/routes/` | `src/pages/` | `pages/`]  ·  **Public env prefix**: [`NEXT_PUBLIC_` | `VITE_` | `PUBLIC_` | `NUXT_PUBLIC_`]
