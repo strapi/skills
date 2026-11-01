@@ -4,7 +4,9 @@ Drop filled-in example outputs here from real or sample products run through the
 
 ## Worked example: `trailhead/`
 
-A complete six-stage run for **Trailhead**, a community trail-conditions app. It deliberately exercises the **Better Auth (beta, opt-in)** path rather than the stock U&P default (so it shows U&P-removed permissions via `plugin-api-permissions`, the `generateId: 'serial'` requirement, and cross-site-cookie handling), with a **Next.js** frontend. It also shows editorial vs user-generated content (Trails vs Reports), components, draft&publish, an `is-owner` policy, and the corrected `create-strapi-app` flags. Read it end-to-end to see how stage-4 choices propagate into the stage-5 spec and the stage-6 build plan.
+A complete six-stage run for **Trailhead**, a community trail-conditions app. It deliberately exercises the **Better Auth (beta, opt-in)** path rather than the stock U&P default (so it shows U&P-removed permissions via `plugin-api-permissions` and the `generateId: 'serial'` requirement), with a **Next.js** frontend. It also shows editorial vs user-generated content (Trails vs Reports), components, draft&publish, and an `is-owner` policy. Read it end-to-end to see how stage-4 choices propagate into the stage-5 spec and the stage-6 build plan.
+
+> **It predates some current rules.** A fresh-eyes review of all six files (October 2026) found that its `06-build-spec.md` says "See stage 5" instead of inlining the schemas, describes permissions without seeding them in code, leaves the cross-site session topology undecided, and has no Operations (robustness sweep) section in `05`. Its reason for choosing Better Auth (Google sign-in and a cleaner session model) also predates the rule that 04 must say what Users & Permissions lacks — U&P supports Google too. Use it for the shape of a run, not as a model for those parts, until it's regenerated with the current skill.
 
 ## Suggested layout
 

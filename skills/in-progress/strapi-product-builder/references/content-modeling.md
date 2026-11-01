@@ -50,7 +50,7 @@ Strapi v5 introduced `documentId` (a stable string) as the public identifier; th
 
 ## Draft & publish
 
-- Off by default. Turn it on per content type if editors need to stage changes.
+- **Set it explicitly in every schema.** In a hand-written `schema.json`, an omitted `draftAndPublish` means **off**; the Content-Type Builder ticks it **on** for new types. (The docs pages disagree on the default; the v5 source sets `false` when the option is missing.) Turn it on when editors need to stage changes. If user-generated content has it on, decide how a user's post gets published, or it stays a draft that never appears.
 - When on, queries default to **published** entries. To fetch drafts, pass `status: 'draft'` (or use the admin/preview flow).
 - Components and dynamic-zone children inherit their parent's published status — you don't toggle draft/publish on components.
 
@@ -94,7 +94,7 @@ This keeps the frontend dumb — it just calls `GET /api/articles` and gets the 
 
 ## Permissions checklist (per content type)
 
-Configure under Settings → Users & Permissions → Roles → Public / Authenticated:
+Seed these in `bootstrap()`, idempotently (see the cookbook's *Seed BOTH roles* entry); use Settings → Users & Permissions → Roles → Public / Authenticated to check them, not to set them — admin-panel clicks don't survive a fresh database:
 
 - `find`, `findOne` — typically `Public: yes` for editorial content
 - `create`, `update`, `delete` — usually off for `Public`, on for `Authenticated` only when end-users own the content

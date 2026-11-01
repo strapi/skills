@@ -11,33 +11,42 @@ This is the default deployment target for any project produced by this skill. Us
 - Built-in media CDN (uploads work out of the box, no S3/R2 to configure)
 - Deploy on `git push` to a connected branch
 - Environment variables UI
-- Project-level secrets (`APP_KEYS`, `JWT_SECRET`, etc.) generated for you on first deploy
+- Default environment variables, listed with your own in the project's **Variables** tab (the docs don't say which ones, so check the tab before adding secrets)
+- Custom domains, on every plan
 
 ## Prerequisites
 
 - A Strapi v5 project that builds locally (`npm run build` succeeds)
-- Postgres-compatible DB config in `config/database.ts` (Strapi Cloud injects `DATABASE_URL`)
+- The scaffold's `config/database.ts`. Strapi Cloud provides its own PostgreSQL database (https://docs.strapi.io/cloud/advanced/database); set **no** `DATABASE_*` variables on Cloud, because any of them switches the project to an external database
+- A self-contained Strapi folder: its own `package.json` and lockfile. Cloud picks the package manager from the lockfile and doesn't document npm/yarn workspaces (a 2025 reply on its feedback board says workspace support isn't on the roadmap), so keep the Strapi app outside any root workspaces
 - Code pushed to a GitHub repo (Strapi Cloud connects via GitHub App)
 
 ## Steps
 
-1. Sign in at https://cloud.strapi.io.
-2. **Create project** → **Connect GitHub repository** → pick the repo and branch.
-3. Set the **root directory** if Strapi lives in a subfolder of a monorepo (e.g., `apps/cms`).
-4. Choose a **region** close to your primary users.
-5. Pick a **plan** (free tier is fine for POCs; paid tiers add custom domains, more resources, backups).
-6. Set **environment variables** — gate on the stage-4 auth choice:
-   - Strapi Cloud auto-injects: `DATABASE_URL`, `APP_KEYS`, `JWT_SECRET`, `ADMIN_JWT_SECRET`, `API_TOKEN_SALT`, `TRANSFER_TOKEN_SALT`, `HOST`, `PORT`
+The order follows https://docs.strapi.io/cloud/getting-started/deployment (checked 2026-10-29).
+
+1. Sign in at https://cloud.strapi.io and **Create project**.
+2. Pick a **plan**. There is no free plan. The entry plan sleeps when idle and has no backups: fine for a POC, not for a product people depend on. While it sleeps, cron tasks can't run and the first request, including a webhook, waits for it to wake. Higher plans stay on and add backups. Check https://strapi.io/pricing-cloud — plans and prices change.
+3. **Connect the GitHub repository** and pick the branch.
+4. Set the project name and a **region** close to your primary users. Then, under **Show advanced settings**:
+   - the **base directory**, if Strapi lives in a subfolder (e.g. `apps/cms`);
+   - the **Node version** (Cloud offered 22 and 24 as of October 2026);
+   - the environment variables (next step).
+5. Set **environment variables** — gate on the stage-4 auth choice:
+   - Cloud's defaults show in the **Variables** tab. Check there before adding `APP_KEYS`, `JWT_SECRET`, `ADMIN_JWT_SECRET`, `API_TOKEN_SALT`, `TRANSFER_TOKEN_SALT` or `ENCRYPTION_KEY` yourself (`ENCRYPTION_KEY` lets admins view API tokens again after creation). Never add `DATABASE_*`
    - Any provider keys (e.g., `GOOGLE_CLIENT_ID`, `STRIPE_SECRET_KEY`)
-   - **Better Auth path only** (skip all of these on stock Users & Permissions — U&P needs no extra auth vars beyond the auto-injected `JWT_SECRET`):
-     - `BETTER_AUTH_SECRET` (generate with `openssl rand -base64 32`)
-     - `BETTER_AUTH_DASHBOARD_SECRET` (generate with `openssl rand -base64 32`)
-     - `BETTER_AUTH_URL` (the Strapi Cloud public URL, used as the Better Auth `baseURL` — set after first deploy)
+   - The CORS origins variable read by `config/middlewares.ts` (both paths)
+   - **Stock U&P path:** `PUBLIC_URL` (if email confirmation or social login is on — Strapi's public URL, read as `url` in `config/server.ts`), and the values `bootstrap()` seeds into the U&P plugin store: the reset-password and confirmation URLs, and each provider's client ID, secret and frontend redirect URL
+   - **Better Auth path only:**
+     - `BETTER_AUTH_SECRET` (generate with `openssl rand -hex 32`)
+     - `BETTER_AUTH_DASHBOARD_SECRET` (only with the dashboard plugin; generate with `openssl rand -hex 32` — the README's example falls back to a hard-coded key)
+     - `BETTER_AUTH_URL` (the Better Auth `baseURL`, per the session topology: the custom API domain (e.g. `https://api.example.com`), or the frontend's origin under the proxy — not `*.strapiapp.com`, which Safari treats as third-party)
      - `CLIENT_URL` (the frontend public URL → `trustedOrigins`)
-7. **Deploy**. First deploy takes a few minutes (build + migrations).
-8. Open the admin URL (`https://<project>.strapiapp.com/admin`) and create the first admin user.
-9. Configure content-API permissions per the stage-5 spec — `Public`/`Authenticated` roles under Users & Permissions on the stock path, or Settings → API Permissions (`plugin-api-permissions`) on the Better Auth path.
-10. Generate API tokens (Settings → API Tokens) for any frontend that needs read access.
+     - `AUTH_COOKIE_DOMAIN` (shared parent domain only: the parent domain, e.g. `example.com`)
+6. **Deploy**. First deploy takes a few minutes (build + migrations).
+7. Right after the first deploy, open the admin URL (`https://<project>.strapiapp.com/admin`) and create the first admin user. Until you do, anyone who opens it can register as super admin.
+8. **Check** the content-API permissions that `bootstrap()` seeded — `Public`/`Authenticated` roles under Users & Permissions on the stock path, or Settings → API Permissions (`plugin-api-permissions`) on the Better Auth path. Change them in code, not here: the seed restores missing grants on every boot.
+9. Create API tokens (Settings → API Tokens) for any frontend that needs read access: a **custom** token holding only the `find`/`findOne` actions it calls. Not the read-only type: it allows every `find` route, including `GET /api/users`, which lists every account's email.
 
 ## Updating after first deploy
 
@@ -47,10 +56,10 @@ This is the default deployment target for any project produced by this skill. Us
 
 ## Common gotchas
 
-- **First deploy 500s on `/admin`** — usually `APP_KEYS` length mismatch. Strapi Cloud handles this for you, but if you copied a `.env` from local, clear those vars from the Cloud env settings so Cloud's auto-generated values win.
-- **Media URLs return 403** — make sure `Public` role has read permission on the upload plugin's `find` action.
-- **Better Auth callback URL mismatch** (Better Auth path only) — `BETTER_AUTH_URL` (used as `baseURL` in `src/lib/auth.ts`) must equal the Strapi Cloud public URL exactly (including `https://`, no trailing slash). Update OAuth provider redirect URIs to `<BETTER_AUTH_URL>/api/auth/callback/<provider>`.
-- **CORS** — set `config/middlewares.ts` `strapi::cors` `origin` to your frontend host(s). Don't use `*` in production.
+- **First deploy 500s on `/admin`** — usually an `APP_KEYS` length mismatch. If you copied values from a local `.env` into the Cloud settings, remove them and check what the Variables tab lists as defaults.
+- **Don't grant Public the upload plugin's `find`** to fix missing images: it lists every file in the media library. Media fields populate without it; if images are missing, check that the request populates the field.
+- **Better Auth callback URL mismatch** (Better Auth path only) — `BETTER_AUTH_URL` (used as `baseURL` in `src/lib/auth.ts`) must equal the public auth origin for the chosen session topology exactly (including `https://`, no trailing slash) — a custom API domain or the frontend's origin, not `*.strapiapp.com`. Update OAuth provider redirect URIs to `<BETTER_AUTH_URL>/api/auth/callback/<provider>`.
+- **CORS** — set `config/middlewares.ts` `strapi::cors` `origin` to exactly the frontend origins whose browsers call Strapi (`[]` if every call goes through the frontend's server). A bare `strapi::cors` defaults to `origin: '*'` with `credentials: true`. Never `*` with credentials; limit preview-deploy patterns to domains you control.
 
 ## When NOT to use Strapi Cloud
 

@@ -68,16 +68,21 @@ For a per-request **allow/deny → 403** (free-plan limit, quota, role gate), us
 **Fix:** create users through the U&P user service (or the `/api/auth/local/register` flow) so the password hashes. Docs: https://docs.strapi.io/cms/features/users-permissions
 
 ## Seed BOTH roles
-**Trap:** a fresh Strapi denies every content-API action for **both** roles — being logged in grants nothing. Seeding only Public `find`/`findOne` makes the app *look* done (public pages render), then every signed-in write 403s — and that 403 reads as an auth/JWT bug, not the missing Authenticated permissions it actually is. Clicking permissions on in the admin UI doesn't survive a fresh deploy/DB — seed them in the script.
-**Fix:** each permission is its own record. Look the roles up by `type`, then create one `plugin::users-permissions.permission` entry per action per role:
+**Trap:** a fresh Strapi denies every action on your own content types for **both** roles — being logged in grants nothing. (U&P seeds only its own grants: Public gets the auth routes such as `auth.register` and `auth.callback`; Authenticated gets `user.me`, `auth.changePassword` and the session routes. Leave those in place.) Seeding only Public `find`/`findOne` makes the app *look* done (public pages render), then every signed-in write 403s — and that 403 reads as an auth/JWT bug, not the missing Authenticated permissions it actually is. Clicking permissions on in the admin UI doesn't survive a fresh deploy/DB — seed them in `bootstrap()`.
+**Fix:** each permission is its own record. Look the roles up by `type`, then find-or-create one `plugin::users-permissions.permission` entry per action per role. `bootstrap()` runs on every boot, so a plain `create` adds a duplicate row each restart — check first. The code is then the source of truth: a grant removed in the admin panel comes back on the next boot.
 
 ```ts
-const pub = await strapi.query('plugin::users-permissions.role').findOne({ where: { type: 'public' } })
-const auth = await strapi.query('plugin::users-permissions.role').findOne({ where: { type: 'authenticated' } })
-for (const action of ['api::report.report.find', 'api::report.report.findOne'])
-  await strapi.query('plugin::users-permissions.permission').create({ data: { action, role: pub.id } })
-for (const action of ['api::report.report.create', 'api::report.report.update', 'api::report.report.delete'])
-  await strapi.query('plugin::users-permissions.permission').create({ data: { action, role: auth.id } })
+const grants = {
+  public: ['api::report.report.find', 'api::report.report.findOne'],
+  authenticated: ['api::report.report.create', 'api::report.report.update', 'api::report.report.delete'],
+}
+for (const [type, actions] of Object.entries(grants)) {
+  const role = await strapi.query('plugin::users-permissions.role').findOne({ where: { type } })
+  for (const action of actions) {
+    const existing = await strapi.query('plugin::users-permissions.permission').findOne({ where: { action, role: { id: role.id } } })
+    if (!existing) await strapi.query('plugin::users-permissions.permission').create({ data: { action, role: role.id } })
+  }
+}
 ```
 
 Action strings are `api::<api>.<content-type>.<find|findOne|create|update|delete>` (custom routes get their own action per the route's `handler`). Public gets reads on public content; Authenticated gets `create`/`update`/`delete` on user-owned content — an ownership app is unusable if only Public is seeded.
@@ -93,6 +98,15 @@ Action strings are `api::<api>.<content-type>.<find|findOne|create|update|delete
 ## User-data exposure: `/api/users/me` only — never seed `user.find`
 **Trap:** seeding U&P's `user.find`/`findOne` (or clicking them on) lets ANY authenticated user — or any leaked JWT — enumerate every account's email via `GET /api/users`. Teams do it reflexively because a UI needs "assignee pickers" or "claimed by X" labels.
 **Fix (verified on v5.51):** the only user permission the Authenticated role gets is **`plugin::users-permissions.user.me`** — the frontend reads the current user from `GET /api/users/me`, and `/api/users` 403s for everyone. Features needing *other* users' identity build on **whitelisted relation fields** (`owner`/`assignee`/`actor` trimmed to `id`/`documentId`/`username` in the controller — next entry), never on a user list. Audit recipe: users list → expect 403; `?populate[<userRelation>]=*` on core routes → expect stripped; custom controllers → whitelist via a `trimUser`-style helper.
+**Never grant `user.update` either.** The stock `PUT /api/users/:id` controller loads the user from the URL and has **no ownership check** against `ctx.state.user`, so anyone signed in can edit any account, including its `role` (read in the v5 source, `packages/plugins/users-permissions/server/src/controllers/user.js`; found exploitable on 5.21 in a real app). For "edit my profile", add a custom route that takes the user from `ctx.state.user` and whitelists the fields it may change.
+
+## API tokens for the frontend: custom, not read-only
+**Trap:** a **read-only** API token passes any route whose action ends in `find` or `findOne`, including U&P's `GET /api/users`. A frontend holding one can list every account's email, and so can anyone who gets the token, or a server handler that passes query parameters through. (Read in the v5 source, `packages/core/admin/server/src/strategies/content-api-token.ts`: `isReadScope`.) On the Better Auth path the same may apply to the generated auth types, if they have content-API routes (not checked).
+**Fix:** create a **custom** token holding only the `find`/`findOne` actions the frontend's routes call. Check: with the token, `GET /api/users` returns 403.
+
+## Upload permissions: no Public `find`
+**Trap:** granting Public `plugin::upload` `find` (often to "fix" missing images) exposes `GET /api/upload/files`, a list of every file in the media library, user uploads included. An Authenticated `destroy` grant lets any signed-in user delete any file.
+**Fix:** Public gets no upload action. Media fields populate without it: the populate permission checks apply to `relation` attributes only, not `media` (read in the v5 source, `packages/core/utils/src/sanitize/visitors/remove-restricted-relations.ts` and `packages/core/utils/src/validate/visitors/throw-restricted-relations.ts`), and the files themselves are served by the media CDN or `/uploads`. Authenticated gets `upload` only if users upload files, never `find` or `destroy`.
 
 ## Returning U&P-user relations (`owner`, `assignee`, `author.username`) in responses
 **Trap:** `sanitizeOutput` strips relations to the **private** `plugin::users-permissions.user` type from core `find`/`findOne` responses **entirely** — populating `owner: { fields: ['username'] }` still returns nothing. The queue UI's "claimed by X" silently renders empty. (Verified on v5.51.)
@@ -206,8 +220,29 @@ Docs: https://docs.strapi.io/cms/features/users-permissions
 **Trap:** a bare `await upsert(item)` inside a page loop lets one failure abort the whole run. With a newest-first walk and no cursor persistence, every subsequent run restarts at the same failing item — permanently blocking everything older. A guaranteed trigger: Strapi's **`string` type carries a 255-char max validator at the app layer** (not just the DB column), so one long `url`/`author` field is a deterministic poison pill. Use `text` for any externally-sourced string.
 **Fix:** try/catch per item → dead-letter row + `continue`, and **dedupe the dead letter on a stable key** (a re-walked window would otherwise write the same failure hundreds of times a day). Aggregate failures into **one** ops alert per run, not one per item — a systemic outage would post thousands. Surface a `truncated` flag when a page cap stops a run before its cutoff: silent truncation reads as "everything synced."
 
+## Cross-site sessions: `*.vercel.app` and `*.strapiapp.com` are different sites
+**Trap:** a frontend on `<app>.vercel.app` and Strapi on `<project>.strapiapp.com` are different sites, so a session cookie Strapi sets is third-party to the frontend. It works on `localhost` (one site, whatever the ports), then sign-in silently fails in Safari, which blocks third-party cookies by default — `SameSite=None; Secure` doesn't help. And since `vercel.app`, `netlify.app`, `pages.dev` and `strapiapp.com` are on the Public Suffix List (https://publicsuffix.org), no cookie can be shared across them: the only shared parent domain is a custom one. This hits Better Auth's cookie session and U&P social login (see *U&P social login needs Strapi's cookie*), not U&P email/password with the JWT held by the frontend's server. The review of `examples/trailhead/` found the decision missing.
+**Fix:** decide the topology in stage 4 and put it in the spec: a shared parent domain (custom domains, e.g. `app.example.com` + `api.example.com`), a proxy through the frontend's server so the browser only calls its own origin, or the U&P JWT held in an `httpOnly` cookie on the frontend's domain and sent as a bearer token from server code. Better Auth's docs give the first two for Safari: https://www.better-auth.com/docs/concepts/cookies. CORS then lists only the origins whose browsers call Strapi (next entry).
+
+## `strapi::cors` defaults to any origin, with credentials
+**Trap:** a bare `'strapi::cors'` in `config/middlewares.ts` uses `origin: '*'` with `credentials: true`: it echoes back whatever origin asks, so any site's JavaScript can make credentialed calls. It matters most when Strapi sets a session cookie (Better Auth, U&P social login), and it hides a missing origin list until production. (Read in the v5 source, `packages/core/core/src/middlewares/cors.ts`.)
+**Fix:** always set `origin`: the exact frontend origins whose browsers call Strapi directly, per environment from an env var. Use `[]` when every call goes through the frontend's server — an empty list sends no CORS headers, so only same-origin calls (such as the admin panel) work.
+
+## U&P settings live in the database: seed them
+**Trap:** the reset-password and email-confirmation URLs, and every social provider's settings (client ID, secret, the frontend redirect URL), are saved by the admin panel into the users-permissions plugin store, not into code. A fresh database or a new environment has none of them, so reset emails carry a broken link and social login is off — on every product with password reset, not only those with social login.
+**Fix:** seed them from env vars in `bootstrap()`: read `strapi.store({ type: 'plugin', name: 'users-permissions' })`, update its `advanced` key (reset and confirmation URLs) and, if social login is on, its `grant` key (providers), then `set` them back. Copy the field names from what the admin panel saves locally (`await store.get({ key: 'advanced' })`, `{ key: 'grant' }`) rather than guessing. Skip a key whose env var is unset, so a missing value never writes an empty URL. (Store keys read in the v5 source, `packages/plugins/users-permissions/server/src/bootstrap/index.js`; not yet run in a build.)
+
+## Set Strapi's `url` when U&P sends links or runs social login
+**Trap:** the scaffold's `config/server.ts` has no `url`. U&P builds the email-confirmation link and each provider's redirect URL from `server.absoluteUrl`, which then falls back to `http://<host>:<port>` — `http://0.0.0.0:1337` in production. (Read in the v5 source: `packages/core/core/src/configuration/urls.ts`, and `server/src/services/user.js` and `server/src/services/providers.js` in the users-permissions plugin.)
+**Fix:** `url: env('PUBLIC_URL')` — local `http://localhost:1337`, production the URL Strapi serves on. The admin build uses the same URL as its backend, so switch to a custom domain only once it serves.
+
+## U&P social login needs Strapi's cookie
+**Trap:** the documented flow ends with the browser calling `GET /api/auth/<provider>/callback` **with Strapi's own session cookie** (`credentials: 'include'`) to get the JWT (https://docs.strapi.io/cms/configurations/users-and-permissions-providers). Between `*.vercel.app` and `*.strapiapp.com` that cookie is third-party, and Safari drops it.
+**Fix:** put the frontend and Strapi on a shared parent domain (custom domains) so the cookie is first-party. A proxy also works in principle, but it changes Strapi's `url` and every callback URL — check it end to end before choosing it. If the session is then held by the frontend's server, the redirect route hands the JWT to the frontend's server, which sets the `httpOnly` cookie.
+
 ## Small gotchas
 - **SQLite local seed:** an empty `DATABASE_FILENAME=` resolves to a directory → `SQLITE_CANTOPEN`. Set `DATABASE_FILENAME=.tmp/data.db`.
+- **New `src/api/<name>/` folder not answering?** Restart `strapi develop` and check the route responds before debugging the code. Seen once on 5.21: a new route returned 405 until a manual restart. (The docs say develop restarts when needed, so this may not reproduce.)
 - **Core-router param is `:id`, not `:documentId`.** A custom `findOne` override reading `ctx.params.documentId` on a core route gets `undefined` → every detail request 404s while `find` works (maddening to diagnose). Custom routes name their own params; read `ctx.params.documentId ?? ctx.params.id`.
 - **Document Service pagination is top-level `limit`/`start`** — REST-style `pagination: { limit }` in `documents().findMany()` is a TS error in typed code and silently ignored in plugin JS (default page size applies).
 - **Next.js proxy route: 204 is a null-body status.** `new NextResponse('', { status: 204 })` **throws** — even an empty string counts as a body — so every DELETE proxied to Strapi 500s while the delete itself succeeded (the UI just never updates). Pass `text || null`.
